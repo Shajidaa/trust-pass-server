@@ -5,6 +5,8 @@
     "target": "ES2023",
     "strict": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "ignoreDeprecations": "6.0"
-  }
-}
+  },
+  "include": ["src/**/*", "generated/**/*"]
+}
