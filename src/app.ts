@@ -11,10 +11,17 @@ const app: Application = express();
 // 1. CORS Configuration
 app.use(
   cors({
-    origin: process.env.CLIENT_URL ? [process.env.CLIENT_URL, "http://localhost:3000", "http://localhost:5173"] : true,
+    origin: process.env.CLIENT_URL
+      ? [process.env.CLIENT_URL, "http://localhost:3000"]
+      : true,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Cookie", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "X-Requested-With",
+    ],
     exposedHeaders: ["Set-Cookie"],
   }),
 );
@@ -30,12 +37,12 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.get("/", (_req: Request, res: Response) => {
   res.status(200).json({
     success: true,
-    message: "Trust Pass Server API is running smoothly 🚀",
+    message: "Trust Pass Server API is running smoothly ",
     version: "1.0.0",
   });
 });
 
-// 5. API V1 Application Routes (Module Pattern)
+// 5.Routes (Module Pattern)
 app.use("/api/v1", v1Routes);
 
 // 6. Global 404 Not Found Handler

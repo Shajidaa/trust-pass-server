@@ -28,3 +28,13 @@ export interface IChangePasswordPayload {
   newPassword: string;
   revokeOtherSessions?: boolean;
 }
+
+export interface IVerifyEmailOtpPayload {
+  email: string;
+  otp: string;
+}
+
+export interface IResendOtpPayload {
+  email: string;
+}
+

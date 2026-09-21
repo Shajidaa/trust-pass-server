@@ -45,8 +45,31 @@ const changePasswordValidationSchema = z.object({
   revokeOtherSessions: z.boolean().optional().default(true),
 });
 
+const verifyEmailOtpValidationSchema = z.object({
+  email: z
+    .string()
+    .email("Please provide a valid email address")
+    .toLowerCase()
+    .trim(),
+  otp: z
+    .string()
+    .length(6, "OTP must be exactly 6 digits")
+    .regex(/^\d{6}$/, "OTP must contain only numbers"),
+});
+
+const resendOtpValidationSchema = z.object({
+  email: z
+    .string()
+    .email("Please provide a valid email address")
+    .toLowerCase()
+    .trim(),
+});
+
 export const AuthValidation = {
   registerValidationSchema,
   loginValidationSchema,
   changePasswordValidationSchema,
+  verifyEmailOtpValidationSchema,
+  resendOtpValidationSchema,
 };
+

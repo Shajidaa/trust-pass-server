@@ -1,27 +1,25 @@
 import { Router } from "express";
-import auth from "../../../middlewares/auth";
+
 import validateRequest from "../../../middlewares/validateRequest";
 
 const router = Router();
 
 // Current User Profile endpoints
-router.get("/profile", auth(), () => {});
+router.get("/profile", () => {});
 
 router.patch(
   "/profile",
-  auth(),
 
   () => {},
 );
 
 // Admin & Moderator endpoints
-router.get("/", auth("ADMIN"), () => {});
+router.get("/", () => {});
 
-router.get("/:id", auth("ADMIN", "MODERATOR"), () => {});
+router.get("/:id", () => {});
 
 router.patch(
   "/:id/status",
-  auth("ADMIN"),
 
   () => {},
 );
