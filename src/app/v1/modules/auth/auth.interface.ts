@@ -1,11 +1,6 @@
 export type TGender = "MALE" | "FEMALE" | "OTHER";
 export type TRole = "CUSTOMER" | "BUYER" | "MODERATOR" | "ADMIN";
-export type TUserStatus =
-  | "ACTIVE"
-  | "INACTIVE"
-  | "SUSPENDED"
-  | "BLOCKED"
-  | "DELETED";
+export type TUserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "BLOCKED" | "DELETED";
 export type TAuthProvider = "GOOGLE" | "CREDENTIAL";
 
 export interface IRegisterUserPayload {
@@ -23,18 +18,16 @@ export interface ILoginUserPayload {
   password: string;
 }
 
+export interface IVerifyEmailPayload {
+  token: string;
+}
+
+export interface IResendVerificationPayload {
+  email: string;
+}
+
 export interface IChangePasswordPayload {
   currentPassword: string;
   newPassword: string;
   revokeOtherSessions?: boolean;
 }
-
-export interface IVerifyEmailOtpPayload {
-  email: string;
-  otp: string;
-}
-
-export interface IResendOtpPayload {
-  email: string;
-}
-

@@ -17,7 +17,11 @@ export default {
   smtp_user: process.env.SMTP_USER!,
   smtp_password: process.env.SMTP_PASSWORD!,
   email_sender: process.env.EMAIL_SENDER,
-
+  email_from:
+    process.env.EMAIL_FROM ||
+    process.env.EMAIL_SENDER ||
+    "Trust Pass <onboarding@resend.dev>",
+  resend_api_key: process.env.RESEND_API_KEY!,
   smtp: {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT)!,

@@ -1,20 +1,9 @@
 import { z } from "zod";
 
 const registerValidationSchema = z.object({
-  name: z
-    .string()
-    .min(2, "Name must be at least 2 characters long")
-    .max(100, "Name cannot exceed 100 characters")
-    .trim(),
-  email: z
-    .string()
-    .email("Please provide a valid email address")
-    .toLowerCase()
-    .trim(),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters long")
-    .max(128, "Password cannot exceed 128 characters"),
+  name: z.string().min(2).max(100).trim(),
+  email: z.string().email().toLowerCase().trim(),
+  password: z.string().min(8).max(128),
   phone: z
     .string()
     .regex(/^[+0-9\s\-()]{7,20}$/, "Please provide a valid phone number")
@@ -25,51 +14,28 @@ const registerValidationSchema = z.object({
 });
 
 const loginValidationSchema = z.object({
-  email: z
-    .string()
-    .email("Please provide a valid email address")
-    .toLowerCase()
-    .trim(),
-  password: z
-    .string()
-    .min(1, "Password is required"),
+  email: z.string().email().toLowerCase().trim(),
+  password: z.string().min(1, "Password is required"),
+});
+
+const verifyEmailValidationSchema = z.object({
+  token: z.string().min(1, "Verification token is required"),
+});
+
+const resendVerificationValidationSchema = z.object({
+  email: z.string().email().toLowerCase().trim(),
 });
 
 const changePasswordValidationSchema = z.object({
-  currentPassword: z
-    .string()
-    .min(1, "Current password is required"),
-  newPassword: z
-    .string()
-    .min(8, "New password must be at least 8 characters long"),
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(8, "New password must be at least 8 characters"),
   revokeOtherSessions: z.boolean().optional().default(true),
-});
-
-const verifyEmailOtpValidationSchema = z.object({
-  email: z
-    .string()
-    .email("Please provide a valid email address")
-    .toLowerCase()
-    .trim(),
-  otp: z
-    .string()
-    .length(6, "OTP must be exactly 6 digits")
-    .regex(/^\d{6}$/, "OTP must contain only numbers"),
-});
-
-const resendOtpValidationSchema = z.object({
-  email: z
-    .string()
-    .email("Please provide a valid email address")
-    .toLowerCase()
-    .trim(),
 });
 
 export const AuthValidation = {
   registerValidationSchema,
   loginValidationSchema,
+  verifyEmailValidationSchema,
+  resendVerificationValidationSchema,
   changePasswordValidationSchema,
-  verifyEmailOtpValidationSchema,
-  resendOtpValidationSchema,
 };
-
