@@ -1,0 +1,24 @@
+model TrustScoreRule {
+    id        String          @id @default(uuid())
+    ruleKey   String          @unique
+    label     String          @db.VarChar(255)
+    points    Decimal         @db.Decimal(10, 2)
+    isActive  Boolean         @default(true)
+    status    TrustRuleStatus
+    createdAt DateTime        @default(now())
+    updatedAt DateTime        @updatedAt
+
+    @@map("trust_score_rules")
+}
+
+model TrustScore {
+    id           String   @id @default(uuid())
+    businessId   String
+    score        Decimal  @db.Decimal(10, 2)
+    /// JSON breakdown: { ruleKey: points, ... }
+    breakdown    Json     @default("{}")
+    calculatedAt DateTime @default(now())
+
+    @@index([businessId])
+    @@map("trust_scores")
+}
