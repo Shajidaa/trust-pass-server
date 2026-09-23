@@ -9,32 +9,12 @@ export default {
   app_name: process.env.APP_NAME,
   database_url: process.env.DATABASE_URL!,
   client_url: process.env.CLIENT_URL || "http://localhost:3000",
-  redis_user: process.env.REDIS_USER!,
-  redis_password: process.env.REDIS_PASSWORD!,
-  redis_host: process.env.REDIS_HOST!,
-  redis_port: process.env.REDIS_PORT!,
-  // Backwards compatibility
-  smtp_user: process.env.SMTP_USER!,
-  smtp_password: process.env.SMTP_PASSWORD!,
-  email_sender: process.env.EMAIL_SENDER,
+
+
   email_from:
     process.env.EMAIL_FROM ||
     process.env.EMAIL_SENDER ||
     "Trust Pass <onboarding@resend.dev>",
   resend_api_key: process.env.RESEND_API_KEY!,
-  smtp: {
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT)!,
-    secure:
-      process.env.SMTP_SECURE === "true" ||
-      Number(process.env.SMTP_PORT) === 465,
-    user: process.env.SMTP_USER!,
-    password: process.env.SMTP_PASSWORD!,
-    sender: process.env.EMAIL_SENDER!,
-  },
-  otp: {
-    expirationSeconds: 300, // 5 minutes
-    cooldownSeconds: 60, // 1 minute resend cooldown
-    maxAttempts: 5, // Max invalid attempts before OTP invalidation
-  },
+
 };
