@@ -1,0 +1,43 @@
+model Address {
+    id          String    @id @default(uuid())
+    addressLine String    @db.Text
+    city        String    @db.VarChar(100)
+    district    String    @db.VarChar(100)
+    division    Division
+    postalCode  String    @db.VarChar(20)
+    country     Country   @default(BANGLADESH)
+    business    Business?
+
+    @@map("address")
+}
+
+model Business {
+    id                   String             @id @default(uuid())
+    ownerId              String
+    owner                User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+    name                 String             @db.VarChar(255)
+    slug                 String             @unique
+    description          String?            @db.Text
+    logoUrl              String?            @db.Text
+    coverUrl             String?            @db.Text
+    categoryId           String?
+    businessType         BusinessType       @default(INDIVIDUAL)
+    websiteUrl           String?            @db.Text
+    instaUrl             String?            @db.Text
+    tiktokUrl            String?            @db.Text
+    addressId            String?            @unique
+    address              Address?           @relation(fields: [addressId], references: [id])
+    contactEmail         String?            @db.VarChar(255)
+    contactPhone         String            @db.VarChar(30)
+    verificationStatus   VerificationStatus @default(UNVERIFIED)
+    trustScore           Int                @default(0)
+    trustScoreUpdatedAt  DateTime?
+    isFeatured           Boolean            @default(false)
+    createdAt            DateTime           @default(now())
+    updatedAt            DateTime           @updatedAt
+
+    @@index([ownerId])
+    @@index([verificationStatus])
+    @@index([categoryId])
+    @@map("businesses")
+}

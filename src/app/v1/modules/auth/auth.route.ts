@@ -1,34 +1,19 @@
 import { Router } from "express";
-
+// import auth from "../../../middlewares/auth";
 import validateRequest from "../../../middlewares/validateRequest";
-
+import { AuthController } from "./auth.contorller";
 import { AuthValidation } from "./auth.validation";
+import auth from "../../../middlewares/auth";
 
 const router = Router();
 
-// Public routes
-router.post(
-  "/register",
-  validateRequest(AuthValidation.registerValidationSchema),
-  () => {},
-);
+// Public
+router.post("/register", validateRequest(AuthValidation.registerValidationSchema), AuthController.registerUser);
+router.post("/login", validateRequest(AuthValidation.loginValidationSchema), AuthController.loginUser);
 
-router.post(
-  "/login",
-  validateRequest(AuthValidation.loginValidationSchema),
-  () => {},
-);
-
-// Protected routes (Requires valid session)
-router.get("/me", () => {});
-
-router.post("/logout", () => {});
-
-router.post(
-  "/change-password",
-
-  validateRequest(AuthValidation.changePasswordValidationSchema),
-  () => {},
-);
+// Protected
+router.get("/me", auth(), AuthController.getCurrentUser);
+router.post("/logout", auth(), AuthController.logoutUser);
+router.post("/change-password", auth(), validateRequest(AuthValidation.changePasswordValidationSchema), AuthController.changePassword);
 
 export const AuthRoutes = router;

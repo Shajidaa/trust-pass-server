@@ -10,7 +10,7 @@ export interface IApiResponse<T> {
     total?: number;
     totalPage?: number;
   };
-  data: T;
+  data?: T;
 }
 
 const sendResponse = <T>(res: Response, data: IApiResponse<T>): void => {

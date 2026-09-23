@@ -23,3 +23,45 @@ enum AuthProvider {
     GOOGLE
     CREDENTIAL
 }
+
+enum TrustRuleStatus {
+    VERIFICATION
+    ACTIVE
+    INACTIVE
+    REPORT
+}
+
+enum VerificationStatus {
+    UNVERIFIED
+    PENDING
+    VERIFIED
+    REJECTED
+    SUSPENDED
+}
+
+enum BusinessType {
+    INDIVIDUAL
+    COMPANY
+    NGO
+    GOVERNMENT
+    OTHER
+}
+
+enum Division {
+    DHAKA
+    CHITTAGONG
+    RAJSHAHI
+    KHULNA
+    BARISAL
+    SYLHET
+    RANGPUR
+    MYMENSINGH
+}
+
+enum Country {
+    BANGLADESH
+    INDIA
+    USA
+    UK
+    OTHER
+}

@@ -1,14 +1,16 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
+import { bearer } from "better-auth/plugins";
 import { prisma } from "./prisma";
+import config from "../config";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
 
-  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:5000",
+  baseURL: process.env.BETTER_AUTH_URL || `http://localhost:${config.port || 5000}`,
   secret: process.env.BETTER_AUTH_SECRET,
 
   emailAndPassword: {
@@ -17,15 +19,17 @@ export const auth = betterAuth({
     autoSignIn: true,
   },
 
+  plugins: [bearer()],
+
   socialProviders: {
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? {
-          google: {
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            scope: ["email", "profile"],
-          },
-        }
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          scope: ["email", "profile"],
+        },
+      }
       : {}),
   },
 
@@ -40,18 +44,16 @@ export const auth = betterAuth({
   },
 
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // Refresh session every 24h
+    expiresIn: 60 * 60 * 24 * 7,   // 7 days
+    updateAge: 60 * 60 * 24,        // refresh session token every 24 h
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 minutes cache
+      maxAge: 5 * 60,               // 5 min client-side cache
     },
   },
 
   advanced: {
-    crossSubDomainCookies: {
-      enabled: false,
-    },
+    crossSubDomainCookies: { enabled: false },
     useSecureCookies: process.env.NODE_ENV === "production",
     defaultCookieAttributes: {
       sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
@@ -65,15 +67,12 @@ export const auth = betterAuth({
       const newSession = ctx.context.newSession;
       if (!newSession) return;
 
-      const userId = newSession.user.id;
-      if (userId) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            provider: (newSession.user as any).provider || "CREDENTIAL",
-          },
-        }).catch(() => {});
-      }
+      await prisma.user
+        .update({
+          where: { id: newSession.user.id },
+          data: { provider: (newSession.user as any).provider || "CREDENTIAL" },
+        })
+        .catch(() => { });
     }),
   },
 });
