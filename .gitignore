@@ -8,3 +8,4 @@ dist/
 .windsurf
 skills-lock.json
 generated
+.vscode

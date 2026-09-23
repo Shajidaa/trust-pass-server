@@ -13,7 +13,7 @@ const forwardCookies = (sourceHeaders: Headers, res: Response): void => {
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthService.registerUser(req.body);
 
-  forwardCookies(result.responseHeaders, res);
+  // forwardCookies(result.responseHeaders, res);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

@@ -100,7 +100,7 @@ const registerUser = async (payload: IRegisterUserPayload) => {
   ]);
 
   return {
-    responseHeaders: response.headers,
+    // responseHeaders: response.headers,
     data: { ...tokens },
   };
 };
