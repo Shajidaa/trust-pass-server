@@ -65,3 +65,18 @@ enum Country {
     UK
     OTHER
 }
+
+enum ProductStatus {
+    DRAFT
+    ACTIVE
+    INACTIVE
+    DELETED
+}
+
+enum Currency {
+    BDT
+    USD
+    INR
+    GBP
+    EUR
+}
