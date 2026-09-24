@@ -2,6 +2,8 @@ import { Router } from "express";
 import { AuthRoutes } from "../modules/auth/auth.route";
 import { BusinessRoutes } from "../modules/business/business.route";
 import { CategoryRoutes } from "../modules/category/category.route";
+import { ProductController } from "../modules/product/product.controller";
+import { ProductRoutes } from "../modules/product/product.route";
 import { TrustRulesRoutes, TrustScoreRoutes } from "../modules/trust/trust.route";
 import { UserRoutes } from "../modules/user/user.route";
 
@@ -17,6 +19,7 @@ const routes: IRoutes[] = [
   { path: "/auth", router: AuthRoutes },
   { path: "/categories", router: CategoryRoutes },
   { path: "/businesses", router: BusinessRoutes },
+  { path: "/products", router: ProductRoutes },
   { path: "/trust-scores", router: TrustScoreRoutes },
   { path: "/trust-rules", router: TrustRulesRoutes },
 ];
@@ -24,5 +27,8 @@ const routes: IRoutes[] = [
 routes.forEach((route) => {
   v1Routes.use(route.path, route.router);
 });
+
+// Nested: GET /api/v1/businesses/:id/products
+v1Routes.get("/businesses/:id/products", ProductController.listBusinessProducts);
 
 export default v1Routes;
