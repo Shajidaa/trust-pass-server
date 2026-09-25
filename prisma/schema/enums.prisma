@@ -80,3 +80,19 @@ enum Currency {
     GBP
     EUR
 }
+
+enum DocumentType {
+    TRADE_LICENSE
+    NID
+    TIN_CERTIFICATE
+    VAT_CERTIFICATE
+    BANK_STATEMENT
+    UTILITY_BILL
+    OTHER
+}
+
+enum DocumentStatus {
+    PENDING
+    APPROVED
+    REJECTED
+}

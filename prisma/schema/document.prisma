@@ -1,0 +1,19 @@
+model BusinessDocument {
+    id              String         @id @default(uuid())
+    businessId      String
+    business        Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    documentType    DocumentType
+    fileUrl         String         @db.Text
+    fileHash        String         @db.Text  // SHA-256 of file — prevents duplicate uploads
+    status          DocumentStatus @default(PENDING)
+    reviewedBy      String?        // userId of the reviewer
+    reviewedAt      DateTime?
+    rejectionReason String?        @db.Text
+    expiresAt       DateTime?
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt
+
+    @@index([businessId])
+    @@index([status])
+    @@map("business_documents")
+}

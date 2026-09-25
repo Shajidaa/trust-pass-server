@@ -36,6 +36,7 @@ model Business {
     createdAt            DateTime           @default(now())
     updatedAt            DateTime           @updatedAt
     products             Product[]
+    documents            BusinessDocument[]
 
     @@index([ownerId])
     @@index([verificationStatus])
