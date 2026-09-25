@@ -10,11 +10,13 @@ export default {
   database_url: process.env.DATABASE_URL!,
   client_url: process.env.CLIENT_URL || "http://localhost:3000",
 
-
   email_from:
     process.env.EMAIL_FROM ||
     process.env.EMAIL_SENDER ||
     "Trust Pass <onboarding@resend.dev>",
   resend_api_key: process.env.RESEND_API_KEY!,
 
+  cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  cloudinary_api_key: process.env.CLOUDINARY_API_KEY!,
+  cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET!,
 };
