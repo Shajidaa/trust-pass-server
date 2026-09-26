@@ -1,0 +1,16 @@
+model BusinessVerification {
+    id          String                     @id @default(uuid())
+    businessId  String
+    business    Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    submittedBy String                     // User.id of the BUYER who submitted
+    status      BusinessVerificationStatus @default(PENDING)
+    reviewedBy  String?                    // User.id of the MODERATOR/ADMIN reviewer
+    reviewedAt  DateTime?
+    adminNote   String?                    @db.Text
+    createdAt   DateTime                   @default(now())
+    updatedAt   DateTime                   @updatedAt
+
+    @@index([businessId])
+    @@index([status])
+    @@map("business_verifications")
+}

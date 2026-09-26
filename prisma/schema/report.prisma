@@ -1,0 +1,24 @@
+model Report {
+    id            String       @id @default(uuid())
+    businessId    String
+    business      Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+    reporterId    String
+    reporter      User         @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+    reason        ReportReason @default(OTHER)
+    title         String?      @db.VarChar(255)
+    description   String       @db.Text
+    evidenceUrls  String[]     @default([])
+    status        ReportStatus @default(PENDING)
+    reviewedBy    String?      // User.id of the MODERATOR/ADMIN reviewer
+    reviewedAt    DateTime?
+    adminNote     String?      @db.Text
+    actionTaken   String?      @db.VarChar(255)
+    penaltyPoints Int?
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
+
+    @@index([businessId])
+    @@index([reporterId])
+    @@index([status])
+    @@map("reports")
+}
