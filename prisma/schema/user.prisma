@@ -17,8 +17,9 @@ model User {
 
     // Relations
     sessions   Session[]
-    accounts   Account[]  // <-- Required for Google linking
+    accounts   Account[] // <-- Required for Google linking
     businesses Business[]
+    reports    Report[]
 
     @@map("user")
 }

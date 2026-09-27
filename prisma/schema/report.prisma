@@ -9,7 +9,7 @@ model Report {
     description   String       @db.Text
     evidenceUrls  String[]     @default([])
     status        ReportStatus @default(PENDING)
-    reviewedBy    String?      // User.id of the MODERATOR/ADMIN reviewer
+    reviewedBy    String? // User.id of the MODERATOR/ADMIN reviewer
     reviewedAt    DateTime?
     adminNote     String?      @db.Text
     actionTaken   String?      @db.VarChar(255)
@@ -19,6 +19,5 @@ model Report {
 
     @@index([businessId])
     @@index([reporterId])
-    @@index([status])
     @@map("reports")
 }

@@ -96,3 +96,26 @@ enum DocumentStatus {
     APPROVED
     REJECTED
 }
+
+enum ReportReason {
+    SPAM
+    INAPPROPRIATE_CONTENT
+    HARASSMENT
+    FRAUD
+    OTHER
+}
+
+enum ReportStatus {
+    PENDING
+    REVIEWED
+    RESOLVED
+    REJECTED
+}
+
+enum BusinessVerificationStatus {
+    PENDING
+    UNDER_REVIEW
+    APPROVED
+    REJECTED
+    SUSPENDED
+}
