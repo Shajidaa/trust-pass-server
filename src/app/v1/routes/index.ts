@@ -7,6 +7,7 @@ import { ProductController } from "../modules/product/product.controller";
 import { ProductRoutes } from "../modules/product/product.route";
 import { TrustRulesRoutes, TrustScoreRoutes } from "../modules/trust/trust.route";
 import { UserRoutes } from "../modules/user/user.route";
+import { AdminRoutes } from "../modules/admin/admin.route";
 import { NotificationRoutes } from "../modules/notification/notification.route";
 import { ReportRoutes } from "../modules/report/report.route";
 import { BusinessVerifyRouter, VerificationRoutes } from "../modules/verification/verification.routes";
@@ -52,5 +53,8 @@ v1Routes.use("/reports", ReportRoutes);
 
 // /api/v1/notifications
 v1Routes.use("/notifications", NotificationRoutes);
+
+// /api/v1/admin
+v1Routes.use("/admin", AdminRoutes);
 
 export default v1Routes;
