@@ -7,6 +7,7 @@ import { ProductController } from "../modules/product/product.controller";
 import { ProductRoutes } from "../modules/product/product.route";
 import { TrustRulesRoutes, TrustScoreRoutes } from "../modules/trust/trust.route";
 import { UserRoutes } from "../modules/user/user.route";
+import { ReportRoutes } from "../modules/report/report.route";
 import { BusinessVerifyRouter, VerificationRoutes } from "../modules/verification/verification.routes";
 
 const v1Routes: Router = Router();
@@ -44,5 +45,8 @@ v1Routes.use("/businesses/:id/verify", BusinessVerifyRouter);
 
 // /api/v1/verifications
 v1Routes.use("/verifications", VerificationRoutes);
+
+// /api/v1/reports
+v1Routes.use("/reports", ReportRoutes);
 
 export default v1Routes;
