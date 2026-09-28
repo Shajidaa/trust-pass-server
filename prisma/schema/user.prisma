@@ -16,10 +16,11 @@ model User {
     provider AuthProvider?
 
     // Relations
-    sessions   Session[]
-    accounts   Account[] // <-- Required for Google linking
-    businesses Business[]
-    reports    Report[]
+    sessions      Session[]
+    accounts      Account[] // <-- Required for Google linking
+    businesses    Business[]
+    reports       Report[]
+    notifications Notification[]
 
     @@map("user")
 }
