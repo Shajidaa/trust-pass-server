@@ -7,6 +7,10 @@ import { ProductController } from "../modules/product/product.controller";
 import { ProductRoutes } from "../modules/product/product.route";
 import { TrustRulesRoutes, TrustScoreRoutes } from "../modules/trust/trust.route";
 import { UserRoutes } from "../modules/user/user.route";
+import { AdminRoutes } from "../modules/admin/admin.route";
+import { NotificationRoutes } from "../modules/notification/notification.route";
+import { ReportRoutes } from "../modules/report/report.route";
+import { BusinessVerifyRouter, VerificationRoutes } from "../modules/verification/verification.routes";
 
 const v1Routes: Router = Router();
 
@@ -37,5 +41,20 @@ v1Routes.use("/businesses/:id/documents", BusinessDocumentRoutes);
 
 // Flat: /api/v1/documents/:id
 v1Routes.use("/documents", DocumentRoutes);
+
+// POST /api/v1/businesses/:id/verify
+v1Routes.use("/businesses/:id/verify", BusinessVerifyRouter);
+
+// /api/v1/verifications
+v1Routes.use("/verifications", VerificationRoutes);
+
+// /api/v1/reports
+v1Routes.use("/reports", ReportRoutes);
+
+// /api/v1/notifications
+v1Routes.use("/notifications", NotificationRoutes);
+
+// /api/v1/admin
+v1Routes.use("/admin", AdminRoutes);
 
 export default v1Routes;

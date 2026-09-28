@@ -39,6 +39,7 @@ model Business {
     documents             BusinessDocument[]
     businessVerifications BusinessVerification[]
     reports               Report[]
+    trustScoreEntries     BusinessTrustScore[]
 
     @@index([ownerId])
     @@index([verificationStatus])
