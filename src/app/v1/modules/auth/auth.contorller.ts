@@ -39,16 +39,7 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const getCurrentUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthService.getCurrentUser(req.user?.id as string);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Profile fetched successfully.",
-    data: result,
-  });
-});
 
 const logoutUser = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthService.logoutUser(req.headers as unknown as Headers);
@@ -84,7 +75,7 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 export const AuthController = {
   registerUser,
   loginUser,
-  getCurrentUser,
+
   logoutUser,
   changePassword,
 };

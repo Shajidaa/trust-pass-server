@@ -161,18 +161,7 @@ const loginUser = async (payload: ILoginUserPayload, headers: Headers | any) => 
 // Current user
 // ---------------------------------------------------------------------------
 
-const getCurrentUser = async (userId: string) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      ...SAFE_USER_SELECT,
 
-    },
-  });
-
-
-  return user;
-};
 
 // ---------------------------------------------------------------------------
 // Logout
@@ -205,7 +194,7 @@ const changePassword = async (payload: IChangePasswordPayload, headers: Headers 
 export const AuthService = {
   registerUser,
   loginUser,
-  getCurrentUser,
+
   logoutUser,
   changePassword,
 };

@@ -6,7 +6,7 @@ import { BusinessDocumentRoutes, DocumentRoutes } from "../modules/document/docu
 import { ProductController } from "../modules/product/product.controller";
 import { ProductRoutes } from "../modules/product/product.route";
 import { TrustRulesRoutes, TrustScoreRoutes } from "../modules/trust/trust.route";
-import { UserRoutes } from "../modules/user/user.route";
+import { UserRoutes, ProfileRoutes } from "../modules/user/user.route";
 import { AdminRoutes } from "../modules/admin/admin.route";
 import { NotificationRoutes } from "../modules/notification/notification.route";
 import { ReportRoutes } from "../modules/report/report.route";
@@ -20,7 +20,8 @@ interface IRoutes {
 }
 
 const routes: IRoutes[] = [
-  { path: "/user", router: UserRoutes },
+  { path: "/users", router: UserRoutes },
+  { path: "/profile", router: ProfileRoutes },
   { path: "/auth", router: AuthRoutes },
   { path: "/categories", router: CategoryRoutes },
   { path: "/businesses", router: BusinessRoutes },

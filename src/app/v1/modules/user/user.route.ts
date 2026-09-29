@@ -1,27 +1,53 @@
 import { Router } from "express";
-
+import auth from "../../../middlewares/auth";
+import { uploadSingle } from "../../../middlewares/upload";
 import validateRequest from "../../../middlewares/validateRequest";
+import { UserController } from "./user.controller";
+import { UserValidation } from "./user.validation";
 
-const router = Router();
+const userRouter = Router(); // /api/v1/users
+const profileRouter = Router(); // /api/v1/profile
 
-// Current User Profile endpoints
-router.get("/profile", () => {});
+// ---------------------------------------------------------------------------
+// /api/v1/users
+// ---------------------------------------------------------------------------
 
-router.patch(
-  "/profile",
-
-  () => {},
+userRouter.get("/me", auth(), UserController.getMe);
+userRouter.patch(
+  "/me",
+  auth(),
+  validateRequest(UserValidation.updateUserSchema),
+  UserController.updateMe,
 );
 
-// Admin & Moderator endpoints
-router.get("/", () => {});
+// ADMIN
 
-router.get("/:id", () => {});
+userRouter.get("/:id", auth("ADMIN"), UserController.getUserById);
+userRouter.patch(
+  "/:id/role",
+  auth("ADMIN"),
+  validateRequest(UserValidation.updateRoleSchema),
+  UserController.updateUserRole,
+);
+userRouter.delete("/:id", auth("ADMIN"), UserController.deleteUser);
 
-router.patch(
-  "/:id/status",
+// ---------------------------------------------------------------------------
+// /api/v1/profile
+// ---------------------------------------------------------------------------
 
-  () => {},
+profileRouter.get("/me", auth(), UserController.getMyProfile);
+profileRouter.patch(
+  "/me",
+  auth(),
+  validateRequest(UserValidation.updateProfileSchema),
+  UserController.updateMyProfile,
+);
+profileRouter.post(
+  "/me/photo",
+  auth(),
+  uploadSingle,
+  UserController.uploadProfilePhoto,
 );
 
-export const UserRoutes = router;
+export const UserRoutes = userRouter;
+export const ProfileRoutes = profileRouter;

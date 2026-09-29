@@ -21,6 +21,7 @@ model User {
     businesses    Business[]
     reports       Report[]
     notifications Notification[]
+    profile       Profile[]
 
     @@map("user")
 }
