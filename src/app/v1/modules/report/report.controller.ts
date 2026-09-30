@@ -5,7 +5,12 @@ import sendResponse from "../../../utils/sendResponse";
 import { ReportService } from "./report.service";
 
 const createReport = catchAsync(async (req: Request, res: Response) => {
-    const result = await ReportService.createReport(req.user!.id, req.body);
+    console.log("REQ BODY:", req.body);
+    console.log(req.file);
+    const file = req.file;
+    const result = await ReportService.createReport(req.user!.id, req.body, file);
+
+
     sendResponse(res, {
         statusCode: httpStatus.CREATED,
         success: true,

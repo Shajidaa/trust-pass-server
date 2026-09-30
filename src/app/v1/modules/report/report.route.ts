@@ -3,6 +3,7 @@ import auth from "../../../middlewares/auth";
 import validateRequest from "../../../middlewares/validateRequest";
 import { ReportController } from "./report.controller";
 import { ReportValidation } from "./report.validation";
+import { uploadSingle } from "../../../middlewares/upload";
 
 const router = Router();
 
@@ -10,6 +11,7 @@ const router = Router();
 router.post(
     "/",
     auth("CUSTOMER", "BUYER"),
+    uploadSingle,
     validateRequest(ReportValidation.createReportSchema),
     ReportController.createReport,
 );

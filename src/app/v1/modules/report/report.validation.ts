@@ -2,12 +2,20 @@ import { z } from "zod";
 
 const REASONS = ["SPAM", "INAPPROPRIATE_CONTENT", "HARASSMENT", "FRAUD", "OTHER"] as const;
 
-const createReportSchema = z.object({
-    businessId: z.string().uuid(),
-    reason: z.enum(REASONS),
+
+
+export const createReportSchema = z.object({
+    businessId: z.string({
+        // required_error: "Business ID is required",
+    }).uuid("Invalid business ID format"),
+
+    reason: z.enum(REASONS), // REASONS array thakle eta thik ache
+
     title: z.string().min(3).max(255).trim().optional(),
-    description: z.string().min(10).max(5000).trim(),
-    evidenceUrls: z.array(z.string().url()).max(10).optional().default([]),
+
+    description: z.string({
+        // required_error: "Description is required",
+    }).min(10, "Description must be at least 10 characters").max(5000).trim(),
 });
 
 const updateReportStatusSchema = z.object({

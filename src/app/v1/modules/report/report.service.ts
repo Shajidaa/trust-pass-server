@@ -2,6 +2,7 @@ import httpStatus from "http-status";
 import AppError from "../../../errors/AppError";
 import { prisma } from "../../../libs/prisma";
 import { ICreateReportPayload, IUpdateReportStatusPayload } from "./report.interface";
+import { uploadToCloudinary } from "../../../libs/cloudinary";
 
 // ---------------------------------------------------------------------------
 // Safe projection for reporter-facing responses (no admin internals)
@@ -9,6 +10,7 @@ import { ICreateReportPayload, IUpdateReportStatusPayload } from "./report.inter
 
 const REPORTER_SELECT = {
     id: true,
+    reporterId: true,
     businessId: true,
     reason: true,
     title: true,
@@ -18,6 +20,7 @@ const REPORTER_SELECT = {
     createdAt: true,
     updatedAt: true,
     business: { select: { id: true, name: true, slug: true } },
+
 } as const;
 
 const ADMIN_SELECT = {
@@ -35,13 +38,18 @@ const ADMIN_SELECT = {
 // Submit report  (CUSTOMER, BUYER)
 // ---------------------------------------------------------------------------
 
-/**
- * Business logic:
- *  - Cannot report your own business.
- *  - One open (PENDING/REVIEWED) report per user per business to prevent spam.
- *  - RESOLVED/REJECTED reports don't count — user can re-report after closure.
- */
-const createReport = async (reporterId: string, payload: ICreateReportPayload) => {
+
+
+// ---------------------------------------------------------------------------
+// List own reports  (CUSTOMER, BUYER)
+// ---------------------------------------------------------------------------
+
+
+const createReport = async (
+    reporterId: string,
+    payload: ICreateReportPayload,
+    file?: Express.Multer.File
+) => {
     const business = await prisma.business.findUnique({
         where: { id: payload.businessId },
         select: { id: true, ownerId: true },
@@ -65,8 +73,15 @@ const createReport = async (reporterId: string, payload: ICreateReportPayload) =
     if (openReport) {
         throw new AppError(
             httpStatus.CONFLICT,
-            "You already have an open report for this business. Wait for it to be resolved before submitting another.",
+            "You already have an open report for this business. Wait for it to be resolved before submitting another."
         );
+    }
+
+    // Process file upload if a file was provided in the request
+    let evidenceUrls = payload.evidenceUrls ?? [];
+    if (file) {
+        const uploadResult = await uploadToCloudinary(file.buffer, "reports/evidence");
+        evidenceUrls.push(uploadResult.url);
     }
 
     return prisma.report.create({
@@ -76,16 +91,11 @@ const createReport = async (reporterId: string, payload: ICreateReportPayload) =
             reason: payload.reason,
             title: payload.title,
             description: payload.description,
-            evidenceUrls: payload.evidenceUrls ?? [],
+            evidenceUrls,
         },
         select: REPORTER_SELECT,
     });
 };
-
-// ---------------------------------------------------------------------------
-// List own reports  (CUSTOMER, BUYER)
-// ---------------------------------------------------------------------------
-
 const getMyReports = async (reporterId: string) => {
     return prisma.report.findMany({
         where: { reporterId },
