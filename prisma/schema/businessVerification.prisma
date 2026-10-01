@@ -2,7 +2,7 @@ model BusinessVerification {
     id          String                     @id @default(uuid())
     businessId  String
     business    Business                   @relation(fields: [businessId], references: [id], onDelete: Cascade)
-    submittedBy String                     // User.id of the BUYER who submitted
+    submittedBy String                     // User.id of the SELLER who submitted
     status      BusinessVerificationStatus @default(PENDING)
     reviewedBy  String?                    // User.id of the MODERATOR/ADMIN reviewer
     reviewedAt  DateTime?

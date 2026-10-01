@@ -15,31 +15,35 @@ router.get("/:id", BusinessController.getBusinessById);
 router.get("/slug/:slug", BusinessController.getBusinessBySlug);
 
 // ---------------------------------------------------------------------------
-// Protected — BUYER (own business)
+// Protected — SELLER (own business)
 // ---------------------------------------------------------------------------
-router.get("/me", auth("BUYER"), BusinessController.getMyBusinesses);
+router.get("/me", auth("SELLER"), BusinessController.getMyBusinesses);
 router.post(
-    "/",
-    auth("BUYER"),
-    validateRequest(BusinessValidation.createBusinessSchema),
-    BusinessController.createBusiness,
+  "/",
+  auth("SELLER"),
+  validateRequest(BusinessValidation.createBusinessSchema),
+  BusinessController.createBusiness,
 );
 
 router.patch(
-    "/:id",
-    auth("BUYER"),
-    validateRequest(BusinessValidation.updateBusinessSchema),
-    BusinessController.updateBusiness,
+  "/:id",
+  auth("SELLER"),
+  validateRequest(BusinessValidation.updateBusinessSchema),
+  BusinessController.updateBusiness,
 );
 
 router.patch(
-    "/:id/address",
-    auth("BUYER"),
-    validateRequest(BusinessValidation.updateAddressSchema),
-    BusinessController.updateBusinessAddress,
+  "/:id/address",
+  auth("SELLER"),
+  validateRequest(BusinessValidation.updateAddressSchema),
+  BusinessController.updateBusinessAddress,
 );
 
-// BUYER deletes own, ADMIN can delete any — ownership check is in the service
-router.delete("/:id", auth("BUYER", "ADMIN"), BusinessController.deleteBusiness);
+// SELLER deletes own, ADMIN can delete any — ownership check is in the service
+router.delete(
+  "/:id",
+  auth("SELLER", "ADMIN"),
+  BusinessController.deleteBusiness,
+);
 
 export const BusinessRoutes = router;

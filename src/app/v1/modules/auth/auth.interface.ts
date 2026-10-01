@@ -1,6 +1,11 @@
 export type TGender = "MALE" | "FEMALE" | "OTHER";
-export type TRole = "CUSTOMER" | "BUYER" | "MODERATOR" | "ADMIN";
-export type TUserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED" | "BLOCKED" | "DELETED";
+export type TRole = "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN";
+export type TUserStatus =
+  | "ACTIVE"
+  | "INACTIVE"
+  | "SUSPENDED"
+  | "BLOCKED"
+  | "DELETED";
 export type TAuthProvider = "GOOGLE" | "CREDENTIAL";
 
 export interface IRegisterUserPayload {

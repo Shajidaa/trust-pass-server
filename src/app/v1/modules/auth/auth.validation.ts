@@ -9,7 +9,9 @@ const registerValidationSchema = z.object({
     .regex(/^[+0-9\s\-()]{7,20}$/, "Please provide a valid phone number")
     .optional(),
   gender: z.enum(["MALE", "FEMALE", "OTHER"] as const).optional(),
-  role: z.enum(["CUSTOMER", "BUYER", "MODERATOR", "ADMIN"] as const).optional(),
+  role: z
+    .enum(["CUSTOMER", "SELLER", "MODERATOR", "ADMIN"] as const)
+    .optional(),
   image: z.string().url("Image must be a valid URL").optional(),
 });
 
@@ -18,11 +20,15 @@ const loginValidationSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const verifyEmailValidationSchema = z.object({
-  token: z.string().min(1, "Verification token is required"),
+const verifyEmailOtpValidationSchema = z.object({
+  email: z.string().email().toLowerCase().trim(),
+  otp: z
+    .string()
+    .length(6, "OTP must be exactly 6 digits")
+    .regex(/^\d{6}$/, "OTP must contain only numbers"),
 });
 
-const resendVerificationValidationSchema = z.object({
+const resendOtpValidationSchema = z.object({
   email: z.string().email().toLowerCase().trim(),
 });
 
@@ -35,7 +41,7 @@ const changePasswordValidationSchema = z.object({
 export const AuthValidation = {
   registerValidationSchema,
   loginValidationSchema,
-  verifyEmailValidationSchema,
-  resendVerificationValidationSchema,
+  verifyEmailOtpValidationSchema,
+  resendOtpValidationSchema,
   changePasswordValidationSchema,
 };

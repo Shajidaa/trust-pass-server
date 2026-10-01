@@ -7,18 +7,32 @@ import { VerificationValidation } from "./verification.validation";
 // /api/v1/verifications
 const verificationRouter = Router();
 
-
-verificationRouter.get("/", auth("MODERATOR", "ADMIN"), VerificationController.listBusinessVerifications);
-verificationRouter.get("/:id", auth("MODERATOR", "ADMIN"), VerificationController.getVerificationById);
+verificationRouter.get(
+  "/",
+  auth("MODERATOR", "ADMIN"),
+  VerificationController.listBusinessVerifications,
+);
+verificationRouter.get(
+  "/:id",
+  auth("MODERATOR", "ADMIN"),
+  VerificationController.getVerificationById,
+);
 verificationRouter.patch(
-    "/:id/review",
-    auth("MODERATOR", "ADMIN"),
-    validateRequest(VerificationValidation.reviewBusinessVerificationSchema),
-    VerificationController.reviewBusinessVerification,
+  "/:id/review",
+  auth("MODERATOR", "ADMIN"),
+  validateRequest(VerificationValidation.reviewBusinessVerificationSchema),
+  VerificationController.reviewBusinessVerification,
 );
 
 // /api/v1/businesses/:id/verify  (merged into main router via mergeParams)
 const businessVerifyRouter = Router({ mergeParams: true });
-businessVerifyRouter.post("/", auth("BUYER"), VerificationController.submitVerification);
+businessVerifyRouter.post(
+  "/",
+  auth("SELLER"),
+  VerificationController.submitVerification,
+);
 
-export { verificationRouter as VerificationRoutes, businessVerifyRouter as BusinessVerifyRouter };
+export {
+  verificationRouter as VerificationRoutes,
+  businessVerifyRouter as BusinessVerifyRouter,
+};

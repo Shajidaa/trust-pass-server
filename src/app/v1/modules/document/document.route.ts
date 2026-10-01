@@ -11,17 +11,17 @@ import { DocumentValidation } from "./document.validation";
 const businessDocRouter = Router({ mergeParams: true });
 
 businessDocRouter.post(
-    "/",
-    auth("BUYER"),
-    uploadSingle,                                                   // multer parses multipart
-    validateRequest(DocumentValidation.uploadDocumentSchema),       // validates body fields
-    DocumentController.uploadDocument,
+  "/",
+  auth("SELLER"),
+  uploadSingle, // multer parses multipart
+  validateRequest(DocumentValidation.uploadDocumentSchema), // validates body fields
+  DocumentController.uploadDocument,
 );
 
 businessDocRouter.get(
-    "/",
-    auth("BUYER", "MODERATOR", "ADMIN"),
-    DocumentController.listBusinessDocuments,
+  "/",
+  auth("SELLER", "MODERATOR", "ADMIN"),
+  DocumentController.listBusinessDocuments,
 );
 
 // ---------------------------------------------------------------------------
@@ -30,15 +30,18 @@ businessDocRouter.get(
 const documentRouter = Router();
 
 documentRouter.get(
-    "/:id",
-    auth("BUYER", "MODERATOR", "ADMIN"),
-    DocumentController.getDocumentById,
+  "/:id",
+  auth("SELLER", "MODERATOR", "ADMIN"),
+  DocumentController.getDocumentById,
 );
 
 documentRouter.delete(
-    "/:id",
-    auth("BUYER", "ADMIN"),
-    DocumentController.deleteDocument,
+  "/:id",
+  auth("SELLER", "ADMIN"),
+  DocumentController.deleteDocument,
 );
 
-export { businessDocRouter as BusinessDocumentRoutes, documentRouter as DocumentRoutes };
+export {
+  businessDocRouter as BusinessDocumentRoutes,
+  documentRouter as DocumentRoutes,
+};

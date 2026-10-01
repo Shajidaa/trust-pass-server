@@ -1,9 +1,10 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { createAuthMiddleware } from "better-auth/api";
-import { bearer } from "better-auth/plugins";
+import { bearer, emailOTP } from "better-auth/plugins";
 import { prisma } from "./prisma";
 import config from "../config";
+import { sendEmail } from "../utils/email";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -15,11 +16,36 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
-    autoSignIn: true,
+    requireEmailVerification: true,
+    autoSignIn: false,
   },
 
-  plugins: [bearer()],
+  plugins: [
+    bearer(),
+
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 600, // 10 minutes
+      // Overrides the default link-based verification — OTP is sent instead
+      overrideDefaultEmailVerification: true,
+
+      async sendVerificationOTP({ email, otp, type }) {
+        const subjects: Record<string, string> = {
+          "email-verification": "Verify your email",
+          "sign-in": "Your sign-in code",
+          "forget-password": "Reset your password",
+        };
+
+        await sendEmail({
+          to: email,
+          subject: subjects[type] ?? "Your verification code",
+          otp,
+          appName: config.app_name || "Trust Pass",
+          expirationMinutes: "10",
+        });
+      },
+    }),
+  ],
 
   socialProviders: {
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -44,11 +70,11 @@ export const auth = betterAuth({
   },
 
   session: {
-    expiresIn: 60 * 60 * 24 * 7,   // 7 days
-    updateAge: 60 * 60 * 24,        // refresh session token every 24 h
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60,               // 5 min client-side cache
+      maxAge: 5 * 60,
     },
   },
 

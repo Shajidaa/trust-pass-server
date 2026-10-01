@@ -1,6 +1,6 @@
 enum Role {
     CUSTOMER
-    BUYER
+    SELLER
     MODERATOR
     ADMIN
 }

@@ -5,24 +5,65 @@ import sendResponse from "../../../utils/sendResponse";
 import { AuthService, extractSetCookies } from "./auth.service";
 
 const forwardCookies = (sourceHeaders: Headers, res: Response): void => {
-  extractSetCookies(sourceHeaders).forEach((cookie) => res.append("Set-Cookie", cookie));
+  extractSetCookies(sourceHeaders).forEach((cookie) =>
+    res.append("Set-Cookie", cookie),
+  );
 };
 
 // ---------------------------------------------------------------------------
 
+/**
+ * POST /register
+ 
+ */
 const registerUser = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthService.registerUser(req.body);
-
-  // forwardCookies(result.responseHeaders, res);
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: "Account created successfully.",
-    data: result
+    message: result.message,
+    data: { email: result.email },
   });
 });
 
+/**
+ * POST /verify-otp  { email, otp }
+
+ */
+const verifyEmailOtp = catchAsync(async (req: Request, res: Response) => {
+  const { email, otp } = req.body;
+  const result = await AuthService.verifyEmailOtp(email, otp);
+
+  forwardCookies(result.responseHeaders, res);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.data.message,
+    data: result.data,
+  });
+});
+
+/**
+ * POST /resend-otp  { email }
+
+ */
+const resendOtp = catchAsync(async (req: Request, res: Response) => {
+  const result = await AuthService.resendOtp(req.body.email);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: result.message,
+    data: null,
+  });
+});
+
+/**
+ * POST /login
+
+ */
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthService.loginUser(
     req.body,
@@ -39,10 +80,10 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-
-
 const logoutUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthService.logoutUser(req.headers as unknown as Headers);
+  const result = await AuthService.logoutUser(
+    req.headers as unknown as Headers,
+  );
 
   forwardCookies(result.responseHeaders, res);
 
@@ -60,7 +101,7 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
     req.headers as unknown as Headers,
   );
 
-
+  forwardCookies(result.responseHeaders, res);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -74,8 +115,9 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 
 export const AuthController = {
   registerUser,
+  verifyEmailOtp,
+  resendOtp,
   loginUser,
-
   logoutUser,
   changePassword,
 };

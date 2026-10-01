@@ -1,71 +1,49 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import config from "../config";
 
-const apiKey = config.resend_api_key;
-if (!apiKey && process.env.NODE_ENV === "production") {
-  throw new Error(
-    "CRITICAL: RESEND_API_KEY environment variable is missing in production.",
-  );
-}
-
-const resend = new Resend(apiKey);
-
-interface SendEmailOptions {
+export interface SendEmailParams {
   to: string;
   subject: string;
-  text?: string;
-  html?: string;
+  otp: string;
+  appName?: string;
+  expirationMinutes?: string;
 }
 
 export const sendEmail = async ({
   to,
   subject,
-  text,
-  html,
-}: SendEmailOptions): Promise<void> => {
-  try {
-    let sender =
-      process.env.EMAIL_FROM ||
-      config.email_sender ||
-      "Trust Pass <onboarding@resend.dev>";
+  otp,
+  appName = "Trust Pass",
+  expirationMinutes = "10",
+}: SendEmailParams): Promise<void> => {
+  const transporter = nodemailer.createTransport({
+    host: config.smtp_host,
+    port: Number(config.smtp_port) || 587,
+    secure: Number(config.smtp_port) === 465,
+    auth: {
+      user: config.smtp_user,
+      pass: config.smtp_pass,
+    },
+  });
 
-    // Resend prohibits public domain senders like @gmail.com unless using onboarding@resend.dev or verified domain
-    if (
-      sender.includes("@gmail.com") ||
-      sender.includes("@yahoo.com") ||
-      sender.includes("@hotmail.com") ||
-      sender.includes("@outlook.com")
-    ) {
-      sender = "Trust Pass <onboarding@resend.dev>";
-    }
+  const html = `
+    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:8px;">
+      <h2 style="color:#111827;margin-bottom:8px;">${subject}</h2>
+      <p style="color:#6b7280;">Use the one-time code below to continue with ${appName}.</p>
+      <div style="text-align:center;margin:32px 0;padding:16px;background:#f3f4f6;border-radius:8px;">
+        <span style="font-size:40px;font-weight:700;letter-spacing:12px;color:#4f46e5;">${otp}</span>
+      </div>
+      <p style="color:#6b7280;font-size:14px;">This code expires in <strong>${expirationMinutes} minutes</strong>. Do not share it with anyone.</p>
+      <p style="color:#9ca3af;font-size:12px;margin-top:24px;">If you didn't request this, you can safely ignore this email.</p>
+    </div>
+  `;
 
-    const { data, error } = await resend.emails.send({
-      from: sender,
-      to: [to],
-      subject,
-      text: text || "",
-      html: html || `<p>${text}</p>`,
-    });
+  await transporter.sendMail({
+    from: `"${appName}" <${config.smtp_user}>`,
+    to,
+    subject,
+    html,
+  });
 
-    if (error) {
-      console.error(
-        `[Email Service Error] Failed to send email to ${to}:`,
-        error,
-      );
-      throw new Error(`Email dispatch failed: ${error.message}`);
-    }
-
-    console.info(
-      `[Email Service Success] Email dispatched to ${to} (ID: ${data?.id})`,
-    );
-  } catch (err) {
-    // Log error securely without leaking raw credentials
-    console.error(
-      `[Email Service Exception] Critical failure while emailing ${to}:`,
-      err,
-    );
-
-    // In production, you might want to hook this into an error monitoring tool like Sentry
-    throw err;
-  }
+  console.log(`[Email] "${subject}" sent to ${to}`);
 };

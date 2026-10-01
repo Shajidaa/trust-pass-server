@@ -37,7 +37,7 @@ const assertAccess = async (
 };
 
 // ---------------------------------------------------------------------------
-// Upload document  (BUYER — own business only)
+// Upload document  (SELLER — own business only)
 // ---------------------------------------------------------------------------
 
 const uploadDocument = async (
@@ -46,7 +46,7 @@ const uploadDocument = async (
   file: Express.Multer.File,
   payload: IUploadDocumentPayload,
 ) => {
-  // Ownership — only the BUYER who owns the business can upload
+  // Ownership — only the SELLER who owns the business can upload
   const business = await prisma.business.findUnique({
     where: { id: businessId },
     select: { id: true, ownerId: true },
@@ -92,7 +92,7 @@ const uploadDocument = async (
 };
 
 // ---------------------------------------------------------------------------
-// List documents for a business  (BUYER-owner | MODERATOR | ADMIN)
+// List documents for a business  (SELLER-owner | MODERATOR | ADMIN)
 // ---------------------------------------------------------------------------
 
 const listBusinessDocuments = async (
@@ -111,7 +111,7 @@ const listBusinessDocuments = async (
 };
 
 // ---------------------------------------------------------------------------
-// Get single document  (BUYER-owner | MODERATOR | ADMIN)
+// Get single document  (SELLER-owner | MODERATOR | ADMIN)
 // ---------------------------------------------------------------------------
 
 const getDocumentById = async (id: string, userId: string, role: string) => {
@@ -127,7 +127,7 @@ const getDocumentById = async (id: string, userId: string, role: string) => {
 };
 
 // ---------------------------------------------------------------------------
-// Delete document  (BUYER-owner | ADMIN)
+// Delete document  (SELLER-owner | ADMIN)
 // ---------------------------------------------------------------------------
 
 const deleteDocument = async (id: string, userId: string, role: string) => {
