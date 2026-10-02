@@ -10,14 +10,14 @@ const router = Router();
 // Public
 // ---------------------------------------------------------------------------
 router.get("/", BusinessController.listBusinesses);
-
-router.get("/:id", BusinessController.getBusinessById);
 router.get("/slug/:slug", BusinessController.getBusinessBySlug);
 
 // ---------------------------------------------------------------------------
 // Protected — SELLER (own business)
 // ---------------------------------------------------------------------------
 router.get("/me", auth("SELLER"), BusinessController.getMyBusinesses);
+
+router.get("/:id", BusinessController.getBusinessById);
 router.post(
   "/",
   auth("SELLER"),
