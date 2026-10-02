@@ -6,75 +6,94 @@ import sendResponse from "../../../utils/sendResponse";
 import { DocumentService } from "./document.service";
 
 const uploadDocument = catchAsync(async (req: Request, res: Response) => {
-    // console.log(req.file);
+  // console.log(req.file);
 
-    if (!req.file) {
-        throw new AppError(httpStatus.BAD_REQUEST, "No file uploaded. Include a file in the 'file' field.");
-    }
-
-    const result = await DocumentService.uploadDocument(
-        String(req.params.id),
-        req.user!.id,
-        req.file,
-        req.body,
+  if (!req.file) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "No file uploaded. Include a file in the 'file' field.",
     );
+  }
 
-    sendResponse(res, {
-        statusCode: httpStatus.CREATED,
-        success: true,
-        message: "Document uploaded successfully.",
-        data: result,
-    });
+  const result = await DocumentService.uploadDocument(
+    String(req.params.id),
+    req.user!.id,
+    req.file,
+    req.body,
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Document uploaded successfully.",
+    data: result,
+  });
 });
 
-const listBusinessDocuments = catchAsync(async (req: Request, res: Response) => {
+const listBusinessDocuments = catchAsync(
+  async (req: Request, res: Response) => {
     const result = await DocumentService.listBusinessDocuments(
-        String(req.params.id),
-        req.user!.id,
-        req.user!.role,
+      String(req.params.id),
+      req.user!.id,
+      req.user!.role,
     );
 
     sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: "Documents fetched successfully.",
-        data: result,
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Documents fetched successfully.",
+      data: result,
     });
-});
+  },
+);
 
 const getDocumentById = catchAsync(async (req: Request, res: Response) => {
-    const result = await DocumentService.getDocumentById(
-        String(req.params.id),
-        req.user!.id,
-        req.user!.role,
-    );
+  const result = await DocumentService.getDocumentById(
+    String(req.params.id),
+    req.user!.id,
+    req.user!.role,
+  );
 
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: "Document fetched successfully.",
-        data: result,
-    });
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Document fetched successfully.",
+    data: result,
+  });
 });
 
 const deleteDocument = catchAsync(async (req: Request, res: Response) => {
-    await DocumentService.deleteDocument(
-        String(req.params.id),
-        req.user!.id,
-        req.user!.role,
-    );
+  await DocumentService.deleteDocument(
+    String(req.params.id),
+    req.user!.id,
+    req.user!.role,
+  );
 
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: "Document deleted successfully.",
-        data: null,
-    });
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Document deleted successfully.",
+    data: null,
+  });
 });
+const reviewDocument = catchAsync(async (req: Request, res: Response) => {
+  const result = await DocumentService.reviewDocument(
+    String(req.params.id),
+    req.user!.id,
+    req.body,
+  );
 
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `Document ${String(req.body.status).toLowerCase()} successfully.`,
+    data: result,
+  });
+});
 export const DocumentController = {
-    uploadDocument,
-    listBusinessDocuments,
-    getDocumentById,
-    deleteDocument,
+  uploadDocument,
+  listBusinessDocuments,
+  getDocumentById,
+  deleteDocument,
+  reviewDocument,
 };

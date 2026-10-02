@@ -45,5 +45,5 @@ export const sendEmail = async ({
     html,
   });
 
-  console.log(`[Email] "${subject}" sent to ${to}`);
+  // console.log(`[Email] "${subject}" sent to ${to}`);
 };

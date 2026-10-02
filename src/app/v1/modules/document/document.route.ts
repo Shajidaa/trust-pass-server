@@ -40,7 +40,12 @@ documentRouter.delete(
   auth("SELLER", "ADMIN"),
   DocumentController.deleteDocument,
 );
-
+documentRouter.patch(
+  "/:id/review",
+  auth("MODERATOR", "ADMIN"),
+  // validateRequest(DocumentValidation.reviewDocumentSchema),
+  DocumentController.reviewDocument,
+);
 export {
   businessDocRouter as BusinessDocumentRoutes,
   documentRouter as DocumentRoutes,

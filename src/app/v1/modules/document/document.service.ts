@@ -179,6 +179,47 @@ const deleteDocument = async (id: string, userId: string, role: string) => {
   return null;
 };
 
+const reviewDocument = async (
+  documentId: string,
+  reviewerId: string,
+  payload: any,
+) => {
+  const document = await prisma.businessDocument.findUnique({
+    where: { id: documentId },
+  });
+
+  if (!document) {
+    throw new AppError(httpStatus.NOT_FOUND, "Document not found.");
+  }
+
+  if (document.status === "APPROVED" || document.status === "REJECTED") {
+    throw new AppError(
+      httpStatus.CONFLICT,
+      "This document has already been reviewed.",
+    );
+  }
+
+  if (payload.status === "REJECTED" && !payload.rejectionReason) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "A rejection reason is required when rejecting a document.",
+    );
+  }
+
+  const updatedDocument = await prisma.businessDocument.update({
+    where: { id: documentId },
+    data: {
+      status: payload.status,
+      reviewedAt: new Date(),
+
+      rejectionReason:
+        payload.status === "REJECTED" ? payload.rejectionReason : null,
+    },
+  });
+
+  return updatedDocument;
+};
+
 // ---------------------------------------------------------------------------
 
 export const DocumentService = {
@@ -186,4 +227,5 @@ export const DocumentService = {
   listBusinessDocuments,
   getDocumentById,
   deleteDocument,
+  reviewDocument,
 };

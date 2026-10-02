@@ -1,4 +1,4 @@
-export type TTrustRuleStatus = "VERIFICATION" | "ACTIVITY" | "REPORT";
+export type TTrustRuleStatus = "VERIFICATION" | "ACTIVE" | "INACTIVE" | "REPORT";
 
 export interface ICreateTrustRulePayload {
     ruleKey: string;

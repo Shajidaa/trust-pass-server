@@ -27,11 +27,6 @@ const assertBusinessOwner = async (businessId: string, userId: string) => {
 // SELLER — Submit business for verification
 // ---------------------------------------------------------------------------
 
-/**
- * Business must have at least one APPROVED document.
- * Cannot re-submit while a PENDING / UNDER_REVIEW request already exists.
- * Sets business.verificationStatus → PENDING.
- */
 const submitVerification = async (businessId: string, userId: string) => {
   const business = await assertBusinessOwner(businessId, userId);
 
@@ -249,7 +244,6 @@ const reviewReport = async (
     }),
   ];
 
-  // Deduct penalty points from trust score if RESOLVED with penalty
   if (
     payload.status === "RESOLVED" &&
     payload.penaltyPoints &&
@@ -276,7 +270,7 @@ const reviewReport = async (
 };
 
 // ---------------------------------------------------------------------------
-// Business trust scores (SELLER submit / MOD+ADMIN award)
+// Business trust scores
 // ---------------------------------------------------------------------------
 
 const getBusinessTrustScores = async (businessId: string) => {
@@ -353,8 +347,6 @@ const addBusinessTrustScore = async (
 
   return { entry, newTrustScore: newScore };
 };
-
-// ---------------------------------------------------------------------------
 
 export const VerificationService = {
   submitVerification,

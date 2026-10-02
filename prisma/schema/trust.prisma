@@ -12,12 +12,14 @@ model TrustScoreRule {
 }
 
 model TrustScore {
-    id           String   @id @default(uuid())
-    businessId   String
+    id         String @id @default(uuid())
+    businessId String @unique
+
     score        Decimal  @db.Decimal(10, 2)
     /// JSON breakdown: { ruleKey: points, ... }
     breakdown    Json     @default("{}")
     calculatedAt DateTime @default(now())
+    business     Business @relation(fields: [businessId], references: [id])
 
     @@index([businessId])
     @@map("trust_scores")
