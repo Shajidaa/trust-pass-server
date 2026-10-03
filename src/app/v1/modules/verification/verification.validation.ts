@@ -13,8 +13,10 @@ const reviewReportSchema = z.object({
 });
 
 const addTrustScoreSchema = z.object({
-    ruleId: z.string().uuid("ruleId must be a valid UUID"),
-    pointsAwarded: z.number().int(),
+    ruleKey: z.string().min(2).max(100).regex(
+        /^[a-z0-9_]+$/,
+        "ruleKey must be lowercase letters, numbers, or underscores",
+    ),
     note: z.string().max(500).trim().optional(),
 });
 

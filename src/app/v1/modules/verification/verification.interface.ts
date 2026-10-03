@@ -20,7 +20,6 @@ export interface IReviewReportPayload {
 }
 
 export interface IAddTrustScorePayload {
-    ruleId: string;
-    pointsAwarded: number;
+    ruleKey: string;
     note?: string;
 }

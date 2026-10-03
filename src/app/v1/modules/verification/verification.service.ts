@@ -310,40 +310,62 @@ const addBusinessTrustScore = async (
       select: { id: true, trustScore: true },
     }),
     prisma.trustScoreRule.findUnique({
-      where: { id: payload.ruleId },
-      select: { id: true, isActive: true },
+      where: { ruleKey: payload.ruleKey },
+      select: { id: true, isActive: true, points: true, ruleKey: true, label: true },
     }),
   ]);
 
   if (!business)
     throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
-  if (!rule) throw new AppError(httpStatus.NOT_FOUND, "Trust rule not found.");
+  if (!rule)
+    throw new AppError(httpStatus.NOT_FOUND, `Trust rule "${payload.ruleKey}" not found.`);
   if (!rule.isActive)
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Cannot apply an inactive rule.",
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, "Cannot apply an inactive rule.");
 
+  const alreadyScored = await prisma.businessTrustScore.findFirst({
+    where: { businessId, ruleId: rule.id },
+  });
+  if (alreadyScored)
+    throw new AppError(httpStatus.CONFLICT, `Trust score for rule "${payload.ruleKey}" already awarded.`);
+
+  const pointsAwarded = Number(rule.points);
+
+  // Create ledger entry
   const entry = await prisma.businessTrustScore.create({
     data: {
       businessId,
-      ruleId: payload.ruleId,
-      pointsAwarded: payload.pointsAwarded,
+      ruleId: rule.id,
+      pointsAwarded,
       note: payload.note,
     },
   });
 
+  // Recalculate total from ledger
   const agg = await prisma.businessTrustScore.aggregate({
     where: { businessId },
     _sum: { pointsAwarded: true },
   });
-
   const newScore = Math.min(100, Math.max(0, agg._sum.pointsAwarded ?? 0));
 
-  await prisma.business.update({
-    where: { id: businessId },
-    data: { trustScore: newScore, trustScoreUpdatedAt: new Date() },
-  });
+  // Update business score + write TrustScore snapshot in one transaction
+  await prisma.$transaction([
+    prisma.business.update({
+      where: { id: businessId },
+      data: { trustScore: newScore, trustScoreUpdatedAt: new Date() },
+    }),
+    prisma.trustScore.upsert({
+      where: { businessId },
+      create: {
+        businessId,
+        score: newScore,
+        breakdown: { [rule.ruleKey]: pointsAwarded },
+      },
+      update: {
+        score: newScore,
+        calculatedAt: new Date(),
+      },
+    }),
+  ]);
 
   return { entry, newTrustScore: newScore };
 };

@@ -269,7 +269,6 @@ const reviewDocument = async (
     );
   }
 
-  // ── APPROVED হলে trust score rule খুঁজি ──────────────────────────
   let scoreEntry: any = null;
 
   if (payload.status === "APPROVED") {
@@ -283,6 +282,7 @@ const reviewDocument = async (
 
     const rule = await prisma.trustScoreRule.findUnique({
       where: { ruleKey },
+      select: { id: true, isActive: true, points: true, ruleKey: true },
     });
 
     if (!rule || !rule.isActive) {
@@ -292,7 +292,6 @@ const reviewDocument = async (
       );
     }
 
-    // একই documentType আগে approve হয়েছিল কিনা চেক (duplicate score আটকাতে)
     const alreadyScored = await prisma.businessTrustScore.findFirst({
       where: {
         businessId: document.businessId,
@@ -309,14 +308,15 @@ const reviewDocument = async (
 
     scoreEntry = {
       ruleId: rule.id,
+      ruleKey: rule.ruleKey,
       pointsAwarded: Number(rule.points),
       note: `Auto-awarded for approved ${document.documentType}`,
     };
   }
 
-  // ── Transaction: document update + score add + business.trustScore update ──
-  const operations: any[] = [
-    prisma.businessDocument.update({
+  // ── One atomic transaction: doc review + ledger entry + snapshot + business score ──
+  const [updatedDoc] = await prisma.$transaction(async (tx) => {
+    const docUpdate = tx.businessDocument.update({
       where: { id: documentId },
       data: {
         status: payload.status,
@@ -325,42 +325,48 @@ const reviewDocument = async (
         rejectionReason:
           payload.status === "REJECTED" ? payload.rejectionReason : null,
       },
-    }),
-  ];
+    });
 
-  if (scoreEntry) {
-    operations.push(
-      prisma.businessTrustScore.create({
-        data: {
-          businessId: document.businessId,
-          ruleId: scoreEntry.ruleId,
-          pointsAwarded: scoreEntry.pointsAwarded,
-          note: scoreEntry.note,
-        },
-      }),
-    );
-  }
+    if (!scoreEntry) return Promise.all([docUpdate]);
 
-  const [updatedDoc] = await prisma.$transaction(operations);
+    const ledgerCreate = tx.businessTrustScore.create({
+      data: {
+        businessId: document.businessId,
+        ruleId: scoreEntry.ruleId,
+        pointsAwarded: scoreEntry.pointsAwarded,
+        note: scoreEntry.note,
+      },
+    });
 
-  // ── business.trustScore recalculate (aggregate থেকে) ──
-  if (scoreEntry) {
-    const agg = await prisma.businessTrustScore.aggregate({
+    const [doc] = await Promise.all([docUpdate, ledgerCreate]);
+
+    // Recalculate from ledger within the same transaction
+    const agg = await tx.businessTrustScore.aggregate({
       where: { businessId: document.businessId },
       _sum: { pointsAwarded: true },
     });
-
     const newScore = Math.min(100, Math.max(0, agg._sum.pointsAwarded ?? 0));
 
-    await prisma.business.update({
+    await tx.business.update({
       where: { id: document.businessId },
-      data: {
-        trustScore: newScore,
-        trustScoreUpdatedAt: new Date(),
+      data: { trustScore: newScore, trustScoreUpdatedAt: new Date() },
+    });
+
+    await tx.trustScore.upsert({
+      where: { businessId: document.businessId },
+      create: {
+        businessId: document.businessId,
+        score: newScore,
+        breakdown: { [scoreEntry.ruleKey]: scoreEntry.pointsAwarded },
+      },
+      update: {
+        score: newScore,
+        calculatedAt: new Date(),
       },
     });
-  }
-  // console.log(updatedDoc);
+
+    return [doc];
+  });
 
   return updatedDoc;
 };
