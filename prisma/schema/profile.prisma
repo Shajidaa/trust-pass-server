@@ -1,12 +1,11 @@
 model Profile {
-    id String @id @default(uuid())
+  id            String   @id @default(uuid())
+  user_id       String
+  profile_photo String?
+  links         String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-    user_id       String
-    user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-    profile_photo String?
-    links         String[]
-    createdAt     DateTime @default(now())
-    updatedAt     DateTime @updatedAt
-
-    @@map("profile")
+  @@map("profile")
 }

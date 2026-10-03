@@ -7,7 +7,13 @@ import {
 import { prisma } from "../../../libs/prisma";
 import { IUploadDocumentPayload } from "./document.interface";
 import { sha256 } from "../../../helpers/hash";
-
+const DOC_RULE_KEY_MAP: Record<string, string> = {
+  TRADE_LICENSE: "trade_license_01",
+  NID: "nid",
+  TIN_CERTIFICATE: "tin_certificate",
+  VAT_CERTIFICATE: "vat_certificate",
+  BANK_STATEMENT: "bank_statement",
+};
 /**
  * Assert the business exists and the requester owns it.
  * Admins and moderators can bypass ownership (pass skipOwnership = true).
@@ -51,6 +57,21 @@ const uploadDocument = async (
     where: { id: businessId },
     select: { id: true, ownerId: true },
   });
+  const ALLOWED_DOC_TYPES = [
+    "TRADE_LICENSE",
+    "NID",
+    "TIN_CERTIFICATE",
+    "VAT_CERTIFICATE",
+    "BANK_STATEMENT",
+  ] as const;
+
+  // uploadDocument
+  if (!ALLOWED_DOC_TYPES.includes(payload.documentType as any)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Invalid documentType. Allowed: ${ALLOWED_DOC_TYPES.join(", ")}`,
+    );
+  }
 
   if (!business)
     throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
@@ -179,6 +200,48 @@ const deleteDocument = async (id: string, userId: string, role: string) => {
   return null;
 };
 
+// const reviewDocument = async (
+//   documentId: string,
+//   reviewerId: string,
+//   payload: any,
+// ) => {
+//   const document = await prisma.businessDocument.findUnique({
+//     where: { id: documentId },
+//   });
+
+//   if (!document) {
+//     throw new AppError(httpStatus.NOT_FOUND, "Document not found.");
+//   }
+
+//   if (document.status === "APPROVED" || document.status === "REJECTED") {
+//     throw new AppError(
+//       httpStatus.CONFLICT,
+//       "This document has already been reviewed.",
+//     );
+//   }
+
+//   if (payload.status === "REJECTED" && !payload.rejectionReason) {
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       "A rejection reason is required when rejecting a document.",
+//     );
+//   }
+
+//   const updatedDocument = await prisma.businessDocument.update({
+//     where: { id: documentId },
+//     data: {
+//       status: payload.status,
+//       reviewedAt: new Date(),
+
+//       rejectionReason:
+//         payload.status === "REJECTED" ? payload.rejectionReason : null,
+//     },
+//   });
+
+//   return updatedDocument;
+// };
+
+// ---------------------------------------------------------------------------
 const reviewDocument = async (
   documentId: string,
   reviewerId: string,
@@ -206,22 +269,101 @@ const reviewDocument = async (
     );
   }
 
-  const updatedDocument = await prisma.businessDocument.update({
-    where: { id: documentId },
-    data: {
-      status: payload.status,
-      reviewedAt: new Date(),
+  // ── APPROVED হলে trust score rule খুঁজি ──────────────────────────
+  let scoreEntry: any = null;
 
-      rejectionReason:
-        payload.status === "REJECTED" ? payload.rejectionReason : null,
-    },
-  });
+  if (payload.status === "APPROVED") {
+    const ruleKey = DOC_RULE_KEY_MAP[document.documentType];
+    if (!ruleKey) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `No trust-score rule mapping for documentType "${document.documentType}".`,
+      );
+    }
 
-  return updatedDocument;
+    const rule = await prisma.trustScoreRule.findUnique({
+      where: { ruleKey },
+    });
+
+    if (!rule || !rule.isActive) {
+      throw new AppError(
+        httpStatus.UNPROCESSABLE_ENTITY,
+        `Trust rule "${ruleKey}" is missing or inactive. Contact admin.`,
+      );
+    }
+
+    // একই documentType আগে approve হয়েছিল কিনা চেক (duplicate score আটকাতে)
+    const alreadyScored = await prisma.businessTrustScore.findFirst({
+      where: {
+        businessId: document.businessId,
+        ruleId: rule.id,
+      },
+    });
+
+    if (alreadyScored) {
+      throw new AppError(
+        httpStatus.CONFLICT,
+        `Trust score for "${document.documentType}" already awarded.`,
+      );
+    }
+
+    scoreEntry = {
+      ruleId: rule.id,
+      pointsAwarded: Number(rule.points),
+      note: `Auto-awarded for approved ${document.documentType}`,
+    };
+  }
+
+  // ── Transaction: document update + score add + business.trustScore update ──
+  const operations: any[] = [
+    prisma.businessDocument.update({
+      where: { id: documentId },
+      data: {
+        status: payload.status,
+        reviewedBy: reviewerId,
+        reviewedAt: new Date(),
+        rejectionReason:
+          payload.status === "REJECTED" ? payload.rejectionReason : null,
+      },
+    }),
+  ];
+
+  if (scoreEntry) {
+    operations.push(
+      prisma.businessTrustScore.create({
+        data: {
+          businessId: document.businessId,
+          ruleId: scoreEntry.ruleId,
+          pointsAwarded: scoreEntry.pointsAwarded,
+          note: scoreEntry.note,
+        },
+      }),
+    );
+  }
+
+  const [updatedDoc] = await prisma.$transaction(operations);
+
+  // ── business.trustScore recalculate (aggregate থেকে) ──
+  if (scoreEntry) {
+    const agg = await prisma.businessTrustScore.aggregate({
+      where: { businessId: document.businessId },
+      _sum: { pointsAwarded: true },
+    });
+
+    const newScore = Math.min(100, Math.max(0, agg._sum.pointsAwarded ?? 0));
+
+    await prisma.business.update({
+      where: { id: document.businessId },
+      data: {
+        trustScore: newScore,
+        trustScoreUpdatedAt: new Date(),
+      },
+    });
+  }
+  // console.log(updatedDoc);
+
+  return updatedDoc;
 };
-
-// ---------------------------------------------------------------------------
-
 export const DocumentService = {
   uploadDocument,
   listBusinessDocuments,

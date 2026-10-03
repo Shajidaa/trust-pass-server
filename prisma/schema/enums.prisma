@@ -1,121 +1,121 @@
 enum Role {
-    CUSTOMER
-    SELLER
-    MODERATOR
-    ADMIN
+  CUSTOMER
+  SELLER
+  MODERATOR
+  ADMIN
 }
 
 enum UserStatus {
-    ACTIVE
-    INACTIVE
-    SUSPENDED
-    BLOCKED
-    DELETED
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BLOCKED
+  DELETED
 }
 
 enum Gender {
-    MALE
-    FEMALE
-    OTHER
+  MALE
+  FEMALE
+  OTHER
 }
 
 enum AuthProvider {
-    GOOGLE
-    CREDENTIAL
+  GOOGLE
+  CREDENTIAL
 }
 
 enum TrustRuleStatus {
-    VERIFICATION
-    ACTIVE
-    INACTIVE
-    REPORT
+  VERIFICATION
+  ACTIVE
+  INACTIVE
+  REPORT
 }
 
 enum VerificationStatus {
-    UNVERIFIED
-    PENDING
-    VERIFIED
-    REJECTED
-    SUSPENDED
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
 }
 
 enum BusinessType {
-    INDIVIDUAL
-    COMPANY
-    NGO
-    GOVERNMENT
-    OTHER
+  INDIVIDUAL
+  COMPANY
+  NGO
+  GOVERNMENT
+  OTHER
 }
 
 enum Division {
-    DHAKA
-    CHITTAGONG
-    RAJSHAHI
-    KHULNA
-    BARISAL
-    SYLHET
-    RANGPUR
-    MYMENSINGH
+  DHAKA
+  CHITTAGONG
+  RAJSHAHI
+  KHULNA
+  BARISAL
+  SYLHET
+  RANGPUR
+  MYMENSINGH
 }
 
 enum Country {
-    BANGLADESH
-    INDIA
-    USA
-    UK
-    OTHER
+  BANGLADESH
+  INDIA
+  USA
+  UK
+  OTHER
 }
 
 enum ProductStatus {
-    DRAFT
-    ACTIVE
-    INACTIVE
-    DELETED
+  DRAFT
+  ACTIVE
+  INACTIVE
+  DELETED
 }
 
 enum Currency {
-    BDT
-    USD
-    INR
-    GBP
-    EUR
+  BDT
+  USD
+  INR
+  GBP
+  EUR
 }
 
 enum DocumentType {
-    TRADE_LICENSE
-    NID
-    TIN_CERTIFICATE
-    VAT_CERTIFICATE
-    BANK_STATEMENT
-    UTILITY_BILL
-    OTHER
+  TRADE_LICENSE
+  NID
+  TIN_CERTIFICATE
+  VAT_CERTIFICATE
+  BANK_STATEMENT
+  UTILITY_BILL
+  OTHER
 }
 
 enum DocumentStatus {
-    PENDING
-    APPROVED
-    REJECTED
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum ReportReason {
-    SPAM
-    INAPPROPRIATE_CONTENT
-    HARASSMENT
-    FRAUD
-    OTHER
+  SPAM
+  INAPPROPRIATE_CONTENT
+  HARASSMENT
+  FRAUD
+  OTHER
 }
 
 enum ReportStatus {
-    PENDING
-    REVIEWED
-    RESOLVED
-    REJECTED
+  PENDING
+  REVIEWED
+  RESOLVED
+  REJECTED
 }
 
 enum BusinessVerificationStatus {
-    PENDING
-    UNDER_REVIEW
-    APPROVED
-    REJECTED
-    SUSPENDED
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
 }

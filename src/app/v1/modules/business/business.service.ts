@@ -143,8 +143,8 @@ const getBusinessBySlug = async (slug: string) => {
 // ---------------------------------------------------------------------------
 
 const getMyBusinesses = async (ownerId: string) => {
-  const allBusinesses = await prisma.business.findMany();
-  console.log("All businesses in DB:", allBusinesses);
+  // const allBusinesses = await prisma.business.findMany();
+  // console.log("All businesses in DB:", allBusinesses);
   const businesses = await prisma.business.findMany({
     where: { ownerId },
     orderBy: { createdAt: "desc" },

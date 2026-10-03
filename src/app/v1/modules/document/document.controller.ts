@@ -82,6 +82,7 @@ const reviewDocument = catchAsync(async (req: Request, res: Response) => {
     req.user!.id,
     req.body,
   );
+  console.log(result);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

@@ -53,9 +53,9 @@ const getBusinessBySlug = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getMyBusinesses = catchAsync(async (req: Request, res: Response) => {
-  console.log(req);
+  // console.log(req);
   const result = await BusinessService.getMyBusinesses(req.user!.id);
-  console.log(result);
+  // console.log(result);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
