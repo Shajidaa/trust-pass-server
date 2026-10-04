@@ -34,41 +34,6 @@ const getTrustScoreHistory = async (businessId: string) => {
 // Recalculate Trust Score  (MODERATOR, ADMIN)
 // ---------------------------------------------------------------------------
 
-// const recalculateTrustScore = async (businessId: string) => {
-//   const activeRules = await prisma.trustScoreRule.findMany({
-//     where: { isActive: true },
-//     orderBy: [{ status: "asc" }, { ruleKey: "asc" }],
-//   });
-
-//   if (activeRules.length === 0) {
-//     throw new AppError(
-//       httpStatus.UNPROCESSABLE_ENTITY,
-//       "No active trust rules found. Add rules before recalculating.",
-//     );
-//   }
-
-//   const breakdown: Record<string, number> = {};
-//   let total = 0;
-
-//   for (const rule of activeRules) {
-//     const pts = Number(rule.points);
-//     breakdown[rule.ruleKey] = pts;
-//     total += pts;
-//   }
-
-//   // Clamp to [0, 100]
-//   const score = Math.min(100, Math.max(0, total));
-
-//   const entry = await prisma.trustScore.create({
-//     data: { businessId, score, breakdown },
-//   });
-
-//   return {
-//     ...serializeScore(entry),
-//     breakdown,
-//     rulesApplied: activeRules.length,
-//   };
-// };
 // trust.helper.ts
 export const recalculateTrustScore = async (businessId: string) => {
   const agg = await prisma.businessTrustScore.aggregate({

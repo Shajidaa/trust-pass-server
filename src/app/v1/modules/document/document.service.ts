@@ -7,12 +7,16 @@ import {
 import { prisma } from "../../../libs/prisma";
 import { IUploadDocumentPayload } from "./document.interface";
 import { sha256 } from "../../../helpers/hash";
+
 const DOC_RULE_KEY_MAP: Record<string, string> = {
   TRADE_LICENSE: "trade_license_01",
   NID: "nid",
   TIN_CERTIFICATE: "tin_certificate",
   VAT_CERTIFICATE: "vat_certificate",
   BANK_STATEMENT: "bank_statement",
+  PASSPORT: "passport",
+  UTILITY_BILL: "utility_bill",
+  OTHER: "other",
 };
 /**
  * Assert the business exists and the requester owns it.
@@ -63,6 +67,9 @@ const uploadDocument = async (
     "TIN_CERTIFICATE",
     "VAT_CERTIFICATE",
     "BANK_STATEMENT",
+    "PASSPORT",
+    "UTILITY_BILL",
+    "OTHER",
   ] as const;
 
   // uploadDocument
@@ -199,47 +206,6 @@ const deleteDocument = async (id: string, userId: string, role: string) => {
   await prisma.businessDocument.delete({ where: { id } });
   return null;
 };
-
-// const reviewDocument = async (
-//   documentId: string,
-//   reviewerId: string,
-//   payload: any,
-// ) => {
-//   const document = await prisma.businessDocument.findUnique({
-//     where: { id: documentId },
-//   });
-
-//   if (!document) {
-//     throw new AppError(httpStatus.NOT_FOUND, "Document not found.");
-//   }
-
-//   if (document.status === "APPROVED" || document.status === "REJECTED") {
-//     throw new AppError(
-//       httpStatus.CONFLICT,
-//       "This document has already been reviewed.",
-//     );
-//   }
-
-//   if (payload.status === "REJECTED" && !payload.rejectionReason) {
-//     throw new AppError(
-//       httpStatus.BAD_REQUEST,
-//       "A rejection reason is required when rejecting a document.",
-//     );
-//   }
-
-//   const updatedDocument = await prisma.businessDocument.update({
-//     where: { id: documentId },
-//     data: {
-//       status: payload.status,
-//       reviewedAt: new Date(),
-
-//       rejectionReason:
-//         payload.status === "REJECTED" ? payload.rejectionReason : null,
-//     },
-//   });
-
-//   return updatedDocument;
-// };
 
 // ---------------------------------------------------------------------------
 const reviewDocument = async (
