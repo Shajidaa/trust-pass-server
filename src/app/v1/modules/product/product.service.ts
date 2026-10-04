@@ -129,7 +129,47 @@ const listBusinessProducts = async (
   if (!business)
     throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
 
-  return listProducts({ ...filters, status: filters.status ?? "ACTIVE" });
+  const page = Math.max(1, filters.page ?? 1);
+  const limit = Math.min(100, Math.max(1, filters.limit ?? 10));
+  const skip = (page - 1) * limit;
+
+  const where: any = {
+    businessId,
+    status: filters.status ?? "ACTIVE",
+  };
+
+  if (filters.search) {
+    where.OR = [
+      { name: { contains: filters.search, mode: "insensitive" } },
+      { description: { contains: filters.search, mode: "insensitive" } },
+    ];
+  }
+
+  if (filters.categoryId) where.categoryId = filters.categoryId;
+  if (filters.currency) where.currency = filters.currency;
+
+  if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+    where.price = {
+      ...(filters.minPrice !== undefined ? { gte: filters.minPrice } : {}),
+      ...(filters.maxPrice !== undefined ? { lte: filters.maxPrice } : {}),
+    };
+  }
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+      select: PRODUCT_SELECT,
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    meta: { page, limit, total, totalPage: Math.ceil(total / limit) },
+    data: products.map(serialize),
+  };
 };
 
 // ---------------------------------------------------------------------------
