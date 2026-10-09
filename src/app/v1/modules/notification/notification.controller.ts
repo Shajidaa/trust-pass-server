@@ -4,13 +4,20 @@ import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
 import { NotificationService } from "./notification.service";
 
+// ---------------------------------------------------------------------------
+// User — own notifications
+// ---------------------------------------------------------------------------
+
 const listNotifications = catchAsync(async (req: Request, res: Response) => {
-    const { page, limit } = req.query;
-    const result = await NotificationService.listNotifications(
-        req.user!.id,
-        page ? Number(page) : 1,
-        limit ? Number(limit) : 20,
-    );
+    const { page, limit, type, isRead } = req.query;
+
+    const result = await NotificationService.listNotifications(req.user!.id, {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 20,
+        type: type ? (String(type) as any) : undefined,
+        isRead: isRead !== undefined ? isRead === "true" : undefined,
+    });
+
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -44,7 +51,11 @@ const markAsRead = catchAsync(async (req: Request, res: Response) => {
 });
 
 const markAllAsRead = catchAsync(async (req: Request, res: Response) => {
-    const result = await NotificationService.markAllAsRead(req.user!.id);
+    const { type } = req.query;
+    const result = await NotificationService.markAllAsRead(
+        req.user!.id,
+        type ? String(type) : undefined,
+    );
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -66,10 +77,47 @@ const deleteNotification = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const deleteAllRead = catchAsync(async (req: Request, res: Response) => {
+    const result = await NotificationService.deleteAllRead(req.user!.id);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "All read notifications deleted.",
+        data: result,
+    });
+});
+
+// ---------------------------------------------------------------------------
+// ADMIN
+// ---------------------------------------------------------------------------
+
+const adminCreateNotification = catchAsync(async (req: Request, res: Response) => {
+    const result = await NotificationService.adminCreateNotification(req.body);
+    sendResponse(res, {
+        statusCode: httpStatus.CREATED,
+        success: true,
+        message: "Notification created successfully.",
+        data: result,
+    });
+});
+
+const broadcastNotification = catchAsync(async (req: Request, res: Response) => {
+    const result = await NotificationService.broadcastNotification(req.body);
+    sendResponse(res, {
+        statusCode: httpStatus.CREATED,
+        success: true,
+        message: "Notification broadcast successfully.",
+        data: result,
+    });
+});
+
 export const NotificationController = {
     listNotifications,
     getUnreadCount,
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllRead,
+    adminCreateNotification,
+    broadcastNotification,
 };

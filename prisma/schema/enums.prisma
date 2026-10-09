@@ -119,3 +119,14 @@ enum BusinessVerificationStatus {
   REJECTED
   SUSPENDED
 }
+
+enum NotificationType {
+  SYSTEM
+  ACCOUNT
+  BUSINESS
+  VERIFICATION
+  REPORT
+  TRUST_SCORE
+  PRODUCT
+  PROMOTION
+}

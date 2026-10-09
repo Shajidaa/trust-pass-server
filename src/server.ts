@@ -4,7 +4,7 @@ import config from "./app/config";
 
 const main = async () => {
   try {
-    const PORT = config.port || 5000;
+    const PORT = Number(config.port) || 5000;
     app.listen(PORT, () => {
       console.log(` Server is running on port ${PORT}`);
     });

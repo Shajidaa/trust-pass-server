@@ -102,6 +102,7 @@ const createReport = async (
     select: REPORTER_SELECT,
   });
 };
+
 const getMyReports = async (reporterId: string) => {
   return prisma.report.findMany({
     where: { reporterId },
