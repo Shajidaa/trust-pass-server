@@ -24,5 +24,6 @@ model Report {
   @@index([businessId])
   @@index([reporterId])
   @@index([status])
-  @@map("report")
+  @@map("reports")
+ 
 }
