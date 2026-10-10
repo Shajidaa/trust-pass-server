@@ -31,8 +31,7 @@ const addressSchema = z.object({
 const createBusinessSchema = z.object({
   name: z.string().min(2).max(255).trim(),
   description: z.string().max(5000).trim().optional(),
-  logoUrl: z.string().url().optional(),
-  coverUrl: z.string().url().optional(),
+  // logoUrl / coverUrl come from file uploads — not body strings
   categoryId: z.string().uuid(),
   businessType: z.enum(BUSINESS_TYPES).optional().default("INDIVIDUAL"),
   websiteUrl: z.string().url().optional(),
@@ -49,8 +48,7 @@ const createBusinessSchema = z.object({
 const updateBusinessSchema = z.object({
   name: z.string().min(2).max(255).trim().optional(),
   description: z.string().max(5000).trim().optional(),
-  logoUrl: z.string().url().optional(),
-  coverUrl: z.string().url().optional(),
+  // logoUrl / coverUrl come from file uploads — not body strings
   categoryId: z.string().uuid().optional(),
   businessType: z.enum(BUSINESS_TYPES).optional(),
   websiteUrl: z.string().url().optional(),

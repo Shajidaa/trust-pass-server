@@ -66,7 +66,11 @@ const getMyBusinesses = catchAsync(async (req: Request, res: Response) => {
 });
 
 const createBusiness = catchAsync(async (req: Request, res: Response) => {
-  const result = await BusinessService.createBusiness(req.user!.id, req.body);
+  const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+  const result = await BusinessService.createBusiness(req.user!.id, req.body, {
+    logo: files?.logo?.[0],
+    cover: files?.cover?.[0],
+  });
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,
@@ -77,10 +81,15 @@ const createBusiness = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateBusiness = catchAsync(async (req: Request, res: Response) => {
+  const files = req.files as Record<string, Express.Multer.File[]> | undefined;
   const result = await BusinessService.updateBusiness(
     String(req.params.id),
     req.user!.id,
     req.body,
+    {
+      logo: files?.logo?.[0],
+      cover: files?.cover?.[0],
+    },
   );
 
   sendResponse(res, {

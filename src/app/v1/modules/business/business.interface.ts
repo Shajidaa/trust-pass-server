@@ -41,6 +41,11 @@ export interface IUpdateBusinessPayload {
     contactPhone?: string;
 }
 
+export interface IBusinessFiles {
+    logo?: Express.Multer.File;
+    cover?: Express.Multer.File;
+}
+
 export interface IBusinessFilters {
     page?: number;
     limit?: number;

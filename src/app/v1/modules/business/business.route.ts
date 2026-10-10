@@ -1,6 +1,7 @@
 import { Router } from "express";
 import auth from "../../../middlewares/auth";
 import validateRequest from "../../../middlewares/validateRequest";
+import { uploadBusinessImages } from "../../../middlewares/upload";
 import { BusinessController } from "./business.controller";
 import { BusinessValidation } from "./business.validation";
 
@@ -21,6 +22,7 @@ router.get("/:id", BusinessController.getBusinessById);
 router.post(
   "/",
   auth("SELLER"),
+  uploadBusinessImages,
   validateRequest(BusinessValidation.createBusinessSchema),
   BusinessController.createBusiness,
 );
@@ -28,6 +30,7 @@ router.post(
 router.patch(
   "/:id",
   auth("SELLER"),
+  uploadBusinessImages,
   validateRequest(BusinessValidation.updateBusinessSchema),
   BusinessController.updateBusiness,
 );

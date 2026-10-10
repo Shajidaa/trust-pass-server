@@ -1,8 +1,13 @@
 import httpStatus from "http-status";
 import AppError from "../../../errors/AppError";
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from "../../../libs/cloudinary";
 import { prisma } from "../../../libs/prisma";
 import {
   IAddressPayload,
+  IBusinessFiles,
   IBusinessFilters,
   ICreateBusinessPayload,
   IUpdateBusinessPayload,
@@ -19,7 +24,6 @@ const toSlug = (name: string): string =>
     .replace(/[^a-z0-9\s-]/g, "")
     .replace(/\s+/g, "-");
 
-/** Public-safe business projection */
 const BUSINESS_SELECT = {
   id: true,
   ownerId: true,
@@ -44,26 +48,19 @@ const BUSINESS_SELECT = {
   address: true,
 } as const;
 
-/** Ensure the slug is globally unique — appends a suffix when it collides */
 const resolveUniqueSlug = async (
   base: string,
   excludeId?: string,
 ): Promise<string> => {
   let slug = base;
   let attempt = 0;
-
   while (true) {
     const conflict = await prisma.business.findFirst({
-      where: {
-        slug,
-        ...(excludeId ? { NOT: { id: excludeId } } : {}),
-      },
+      where: { slug, ...(excludeId ? { NOT: { id: excludeId } } : {}) },
       select: { id: true },
     });
-
     if (!conflict) return slug;
-    attempt++;
-    slug = `${base}-${attempt}`;
+    slug = `${base}-${++attempt}`;
   }
 };
 
@@ -85,7 +82,6 @@ const listBusinesses = async (filters: IBusinessFilters) => {
       { description: { contains: filters.search, mode: "insensitive" } },
     ];
   }
-
   if (filters.categoryId) where.categoryId = filters.categoryId;
   if (filters.businessType) where.businessType = filters.businessType;
   if (filters.verificationStatus)
@@ -117,9 +113,7 @@ const getBusinessById = async (id: string) => {
     where: { id },
     select: BUSINESS_SELECT,
   });
-
-  if (!business)
-    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!business) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
   return business;
 };
 
@@ -132,9 +126,7 @@ const getBusinessBySlug = async (slug: string) => {
     where: { slug },
     select: BUSINESS_SELECT,
   });
-
-  if (!business)
-    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!business) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
   return business;
 };
 
@@ -143,15 +135,11 @@ const getBusinessBySlug = async (slug: string) => {
 // ---------------------------------------------------------------------------
 
 const getMyBusinesses = async (ownerId: string) => {
-  // const allBusinesses = await prisma.business.findMany();
-  // console.log("All businesses in DB:", allBusinesses);
-  const businesses = await prisma.business.findMany({
+  return prisma.business.findMany({
     where: { ownerId },
     orderBy: { createdAt: "desc" },
     select: BUSINESS_SELECT,
   });
-
-  return businesses;
 };
 
 // ---------------------------------------------------------------------------
@@ -161,13 +149,45 @@ const getMyBusinesses = async (ownerId: string) => {
 const createBusiness = async (
   ownerId: string,
   payload: ICreateBusinessPayload,
+  files?: IBusinessFiles,
 ) => {
   const baseSlug = toSlug(payload.name);
   const slug = await resolveUniqueSlug(baseSlug);
 
-  // Upsert address if provided, otherwise skip
-  let addressId: string | undefined;
+  // 1. Upload logo + cover in parallel BEFORE touching the DB.
+  //    Track publicIds for compensating rollback if the DB write fails.
+  const uploadedPublicIds: string[] = [];
 
+  const [logoResult, coverResult] = await Promise.all([
+    files?.logo
+      ? uploadToCloudinary(
+        files.logo.buffer,
+        `trust-pass/businesses/${ownerId}/logo`,
+        `logo_${slug}`,
+      ).then((r) => {
+        uploadedPublicIds.push(r.publicId);
+        return r;
+      })
+      : Promise.resolve(null),
+
+    files?.cover
+      ? uploadToCloudinary(
+        files.cover.buffer,
+        `trust-pass/businesses/${ownerId}/cover`,
+        `cover_${slug}`,
+      ).then((r) => {
+        uploadedPublicIds.push(r.publicId);
+        return r;
+      })
+      : Promise.resolve(null),
+  ]);
+
+  // Uploaded file takes priority over any URL string passed in the body
+  const logoUrl = logoResult?.url ?? payload.logoUrl;
+  const coverUrl = coverResult?.url ?? payload.coverUrl;
+
+  // 2. Create address record if provided
+  let addressId: string | undefined;
   if (payload.address) {
     const addr = await prisma.address.create({
       data: {
@@ -182,27 +202,46 @@ const createBusiness = async (
     addressId = addr.id;
   }
 
-  const business = await prisma.business.create({
-    data: {
-      ownerId,
-      name: payload.name.trim(),
-      slug,
-      description: payload.description,
-      logoUrl: payload.logoUrl,
-      coverUrl: payload.coverUrl,
-      categoryId: payload.categoryId,
-      businessType: payload.businessType ?? "INDIVIDUAL",
-      websiteUrl: payload.websiteUrl,
-      instaUrl: payload.instaUrl,
-      tiktokUrl: payload.tiktokUrl,
-      contactEmail: payload.contactEmail,
-      contactPhone: payload.contactPhone,
-      addressId,
-    },
-    select: BUSINESS_SELECT,
-  });
+  // 3. DB transaction — business + initial verification record atomically.
+  //    On failure: compensate by deleting any uploaded Cloudinary assets.
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const newBusiness = await tx.business.create({
+        data: {
+          ownerId,
+          name: payload.name.trim(),
+          slug,
+          description: payload.description,
+          logoUrl,
+          coverUrl,
+          categoryId: payload.categoryId,
+          businessType: payload.businessType ?? "INDIVIDUAL",
+          websiteUrl: payload.websiteUrl,
+          instaUrl: payload.instaUrl,
+          tiktokUrl: payload.tiktokUrl,
+          contactEmail: payload.contactEmail,
+          contactPhone: payload.contactPhone,
+          addressId,
+          verificationStatus: "PENDING",
+        },
+        select: BUSINESS_SELECT,
+      });
 
-  return business;
+      await tx.businessVerification.create({
+        data: {
+          businessId: newBusiness.id,
+          submittedBy: ownerId,
+          status: "PENDING",
+        },
+      });
+
+      return newBusiness;
+    });
+  } catch (err) {
+    // Compensating action — delete orphaned Cloudinary assets
+    await Promise.allSettled(uploadedPublicIds.map(deleteFromCloudinary));
+    throw err;
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -213,16 +252,22 @@ const updateBusiness = async (
   id: string,
   ownerId: string,
   payload: IUpdateBusinessPayload,
+  files?: IBusinessFiles,
 ) => {
   const existing = await prisma.business.findUnique({
     where: { id },
-    select: { id: true, ownerId: true, name: true, slug: true },
+    select: {
+      id: true,
+      ownerId: true,
+      name: true,
+      slug: true,
+      logoUrl: true,
+      coverUrl: true,
+    },
   });
 
-  if (!existing)
-    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!existing) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
 
-  // Ownership check — ADMIN bypass is handled at route level with role middleware
   if (existing.ownerId !== ownerId) {
     throw new AppError(
       httpStatus.FORBIDDEN,
@@ -231,46 +276,76 @@ const updateBusiness = async (
   }
 
   let slug = existing.slug;
-  if (
-    payload.name &&
-    payload.name.toLowerCase() !== existing.name.toLowerCase()
-  ) {
+  if (payload.name && payload.name.toLowerCase() !== existing.name.toLowerCase()) {
     slug = await resolveUniqueSlug(toSlug(payload.name), id);
   }
 
-  const updated = await prisma.business.update({
-    where: { id },
-    data: {
-      ...(payload.name ? { name: payload.name.trim(), slug } : {}),
-      ...(payload.description !== undefined
-        ? { description: payload.description }
-        : {}),
-      ...(payload.logoUrl !== undefined ? { logoUrl: payload.logoUrl } : {}),
-      ...(payload.coverUrl !== undefined ? { coverUrl: payload.coverUrl } : {}),
-      ...(payload.categoryId !== undefined
-        ? { categoryId: payload.categoryId }
-        : {}),
-      ...(payload.businessType !== undefined
-        ? { businessType: payload.businessType }
-        : {}),
-      ...(payload.websiteUrl !== undefined
-        ? { websiteUrl: payload.websiteUrl }
-        : {}),
-      ...(payload.instaUrl !== undefined ? { instaUrl: payload.instaUrl } : {}),
-      ...(payload.tiktokUrl !== undefined
-        ? { tiktokUrl: payload.tiktokUrl }
-        : {}),
-      ...(payload.contactEmail !== undefined
-        ? { contactEmail: payload.contactEmail }
-        : {}),
-      ...(payload.contactPhone !== undefined
-        ? { contactPhone: payload.contactPhone }
-        : {}),
-    },
-    select: BUSINESS_SELECT,
-  });
+  // Upload new images in parallel — only for fields that have a new file
+  const uploadedPublicIds: string[] = [];
+  const oldPublicIds: string[] = [];
 
-  return updated;
+  const [logoResult, coverResult] = await Promise.all([
+    files?.logo
+      ? uploadToCloudinary(
+        files.logo.buffer,
+        `trust-pass/businesses/${ownerId}/logo`,
+        `logo_${slug}`,
+      ).then((r) => {
+        uploadedPublicIds.push(r.publicId);
+        return r;
+      })
+      : Promise.resolve(null),
+
+    files?.cover
+      ? uploadToCloudinary(
+        files.cover.buffer,
+        `trust-pass/businesses/${ownerId}/cover`,
+        `cover_${slug}`,
+      ).then((r) => {
+        uploadedPublicIds.push(r.publicId);
+        return r;
+      })
+      : Promise.resolve(null),
+  ]);
+
+  // Resolve final URLs
+  const logoUrl = logoResult?.url ?? payload.logoUrl;
+  const coverUrl = coverResult?.url ?? payload.coverUrl;
+
+  // Track old Cloudinary assets to delete after successful update
+  if (logoResult && existing.logoUrl) oldPublicIds.push(extractPublicId(existing.logoUrl));
+  if (coverResult && existing.coverUrl) oldPublicIds.push(extractPublicId(existing.coverUrl));
+
+  try {
+    const updated = await prisma.business.update({
+      where: { id },
+      data: {
+        ...(payload.name ? { name: payload.name.trim(), slug } : {}),
+        ...(payload.description !== undefined ? { description: payload.description } : {}),
+        ...(logoUrl !== undefined ? { logoUrl } : {}),
+        ...(coverUrl !== undefined ? { coverUrl } : {}),
+        ...(payload.categoryId !== undefined ? { categoryId: payload.categoryId } : {}),
+        ...(payload.businessType !== undefined ? { businessType: payload.businessType } : {}),
+        ...(payload.websiteUrl !== undefined ? { websiteUrl: payload.websiteUrl } : {}),
+        ...(payload.instaUrl !== undefined ? { instaUrl: payload.instaUrl } : {}),
+        ...(payload.tiktokUrl !== undefined ? { tiktokUrl: payload.tiktokUrl } : {}),
+        ...(payload.contactEmail !== undefined ? { contactEmail: payload.contactEmail } : {}),
+        ...(payload.contactPhone !== undefined ? { contactPhone: payload.contactPhone } : {}),
+      },
+      select: BUSINESS_SELECT,
+    });
+
+    // Delete old images from Cloudinary only after DB succeeds
+    if (oldPublicIds.length > 0) {
+      await Promise.allSettled(oldPublicIds.map(deleteFromCloudinary));
+    }
+
+    return updated;
+  } catch (err) {
+    // DB failed — roll back newly uploaded assets
+    await Promise.allSettled(uploadedPublicIds.map(deleteFromCloudinary));
+    throw err;
+  }
 };
 
 // ---------------------------------------------------------------------------
@@ -284,11 +359,10 @@ const deleteBusiness = async (
 ) => {
   const existing = await prisma.business.findUnique({
     where: { id },
-    select: { id: true, ownerId: true },
+    select: { id: true, ownerId: true, logoUrl: true, coverUrl: true, addressId: true },
   });
 
-  if (!existing)
-    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!existing) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
 
   const isOwner = existing.ownerId === requesterId;
   const isAdmin = requesterRole === "ADMIN";
@@ -300,18 +374,16 @@ const deleteBusiness = async (
     );
   }
 
-  // Delete linked address (cascade-safe — address has no other relations)
-  const biz = await prisma.business.findUnique({
-    where: { id },
-    select: { addressId: true },
-  });
-
   await prisma.business.delete({ where: { id } });
 
-  if (biz?.addressId) {
-    await prisma.address
-      .delete({ where: { id: biz.addressId } })
-      .catch(() => {});
+  if (existing.addressId) {
+    await prisma.address.delete({ where: { id: existing.addressId } }).catch(() => { });
+  }
+
+  // Clean up Cloudinary assets after DB delete succeeds
+  const toDelete = [existing.logoUrl, existing.coverUrl].filter(Boolean) as string[];
+  if (toDelete.length > 0) {
+    await Promise.allSettled(toDelete.map((url) => deleteFromCloudinary(extractPublicId(url))));
   }
 
   return null;
@@ -331,8 +403,7 @@ const updateBusinessAddress = async (
     select: { id: true, ownerId: true, addressId: true },
   });
 
-  if (!existing)
-    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!existing) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
 
   if (existing.ownerId !== ownerId) {
     throw new AppError(
@@ -350,24 +421,33 @@ const updateBusinessAddress = async (
     country: payload.country ?? "BANGLADESH",
   };
 
-  let address;
-
   if (existing.addressId) {
-    // Update existing address row
-    address = await prisma.address.update({
+    return prisma.address.update({
       where: { id: existing.addressId },
       data: addressData,
     });
-  } else {
-    // Create new address and link it
-    address = await prisma.address.create({ data: addressData });
-    await prisma.business.update({
-      where: { id },
-      data: { addressId: address.id },
-    });
   }
 
+  const address = await prisma.address.create({ data: addressData });
+  await prisma.business.update({ where: { id }, data: { addressId: address.id } });
   return address;
+};
+
+// ---------------------------------------------------------------------------
+// Internal helper — extract Cloudinary public_id from a secure URL
+// e.g. "https://res.cloudinary.com/demo/image/upload/v123/trust-pass/businesses/x/logo_slug.jpg"
+//   => "trust-pass/businesses/x/logo_slug"
+// ---------------------------------------------------------------------------
+
+const extractPublicId = (url: string): string => {
+  try {
+    const parts = url.split("/upload/");
+    if (parts.length < 2) return url;
+    // Strip version segment (v<digits>/) if present, then strip extension
+    return parts[1].replace(/^v\d+\//, "").replace(/\.[^/.]+$/, "");
+  } catch {
+    return url;
+  }
 };
 
 // ---------------------------------------------------------------------------
