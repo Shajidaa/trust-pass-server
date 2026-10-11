@@ -72,7 +72,8 @@ const getProductBySlug = catchAsync(async (req: Request, res: Response) => {
 });
 
 const createProduct = catchAsync(async (req: Request, res: Response) => {
-    const result = await ProductService.createProduct(req.user!.id, req.body);
+    const files = (req.files as Express.Multer.File[]) ?? [];
+    const result = await ProductService.createProduct(req.user!.id, req.body, files);
 
     sendResponse(res, {
         statusCode: httpStatus.CREATED,
@@ -83,10 +84,12 @@ const createProduct = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateProduct = catchAsync(async (req: Request, res: Response) => {
+    const files = (req.files as Express.Multer.File[]) ?? [];
     const result = await ProductService.updateProduct(
         String(req.params.id),
         req.user!.id,
         req.body,
+        files,
     );
 
     sendResponse(res, {

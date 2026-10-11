@@ -1,6 +1,14 @@
 export type TProductStatus = "DRAFT" | "ACTIVE" | "INACTIVE" | "DELETED";
 export type TCurrency = "BDT" | "USD" | "INR" | "GBP" | "EUR";
 
+/**
+ * Stored in the `images` JSON column so we can delete from Cloudinary later.
+ */
+export interface IProductImage {
+    url: string;
+    publicId: string;
+}
+
 export interface ICreateProductPayload {
     businessId: string;
     categoryId?: string;
@@ -9,7 +17,7 @@ export interface ICreateProductPayload {
     price: number;
     currency?: TCurrency;
     stock?: number;
-    images?: string[];
+    images?: IProductImage[];
     status?: TProductStatus;
 }
 
@@ -20,7 +28,8 @@ export interface IUpdateProductPayload {
     price?: number;
     currency?: TCurrency;
     stock?: number;
-    images?: string[];
+    /** Pass only the images that should remain (publicIds to keep). New files are handled via multer. */
+    retainImagePublicIds?: string[];
     status?: TProductStatus;
 }
 

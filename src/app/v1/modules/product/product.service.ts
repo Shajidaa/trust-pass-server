@@ -1,9 +1,11 @@
 import httpStatus from "http-status";
 import AppError from "../../../errors/AppError";
+import { deleteFromCloudinary, uploadToCloudinary } from "../../../libs/cloudinary";
 import { prisma } from "../../../libs/prisma";
 import {
   ICreateProductPayload,
   IProductFilters,
+  IProductImage,
   IUpdateProductPayload,
 } from "./product.interface";
 
@@ -205,10 +207,18 @@ const getProductBySlug = async (slug: string) => {
 const createProduct = async (
   ownerId: string,
   payload: ICreateProductPayload,
+  imageFiles: Express.Multer.File[],
 ) => {
   await assertBusinessOwnership(payload.businessId, ownerId);
 
   const slug = await resolveUniqueSlug(toSlug(payload.name));
+
+  // Upload all images to Cloudinary in parallel
+  const uploadedImages: IProductImage[] = await Promise.all(
+    imageFiles.map((file) =>
+      uploadToCloudinary(file.buffer, `products/${payload.businessId}`),
+    ),
+  );
 
   const product = await prisma.product.create({
     data: {
@@ -220,7 +230,7 @@ const createProduct = async (
       price: payload.price,
       currency: payload.currency ?? "BDT",
       stock: payload.stock,
-      images: payload.images ?? [],
+      images: uploadedImages as any,  // IProductImage[] — cast required for Prisma Json field
       status: payload.status ?? "DRAFT",
     },
     select: PRODUCT_SELECT,
@@ -237,6 +247,7 @@ const updateProduct = async (
   id: string,
   ownerId: string,
   payload: IUpdateProductPayload,
+  imageFiles: Express.Multer.File[],
 ) => {
   const existing = await prisma.product.findUnique({
     where: { id },
@@ -246,6 +257,7 @@ const updateProduct = async (
       name: true,
       slug: true,
       status: true,
+      images: true,
     },
   });
 
@@ -261,11 +273,28 @@ const updateProduct = async (
 
   await assertBusinessOwnership(existing.businessId, ownerId);
 
+  // Resolve which existing images to keep
+  const currentImages = (existing.images as unknown as IProductImage[]) ?? [];
+  const retainSet = new Set(payload.retainImagePublicIds ?? currentImages.map((i) => i.publicId));
+
+  const imagesToKeep = currentImages.filter((i) => retainSet.has(i.publicId));
+  const imagesToDelete = currentImages.filter((i) => !retainSet.has(i.publicId));
+
+  // Upload new images (if any)
+  const newlyUploaded: IProductImage[] = await Promise.all(
+    imageFiles.map((file) =>
+      uploadToCloudinary(file.buffer, `products/${existing.businessId}`),
+    ),
+  );
+
+  const finalImages = [...imagesToKeep, ...newlyUploaded];
+
+  if (finalImages.length > 10) {
+    throw new AppError(httpStatus.BAD_REQUEST, "A product can have at most 10 images.");
+  }
+
   let slug = existing.slug;
-  if (
-    payload.name &&
-    payload.name.toLowerCase() !== existing.name.toLowerCase()
-  ) {
+  if (payload.name && payload.name.toLowerCase() !== existing.name.toLowerCase()) {
     slug = await resolveUniqueSlug(toSlug(payload.name), id);
   }
 
@@ -273,20 +302,23 @@ const updateProduct = async (
     where: { id },
     data: {
       ...(payload.name ? { name: payload.name.trim(), slug } : {}),
-      ...(payload.description !== undefined
-        ? { description: payload.description }
-        : {}),
-      ...(payload.categoryId !== undefined
-        ? { categoryId: payload.categoryId }
-        : {}),
+      ...(payload.description !== undefined ? { description: payload.description } : {}),
+      ...(payload.categoryId !== undefined ? { categoryId: payload.categoryId } : {}),
       ...(payload.price !== undefined ? { price: payload.price } : {}),
       ...(payload.currency !== undefined ? { currency: payload.currency } : {}),
       ...(payload.stock !== undefined ? { stock: payload.stock } : {}),
-      ...(payload.images !== undefined ? { images: payload.images } : {}),
       ...(payload.status !== undefined ? { status: payload.status } : {}),
+      images: finalImages as any,  // IProductImage[] — cast required for Prisma Json field
     },
     select: PRODUCT_SELECT,
   });
+
+  // Clean up removed images from Cloudinary after DB commit (non-blocking)
+  if (imagesToDelete.length > 0) {
+    Promise.all(imagesToDelete.map((i) => deleteFromCloudinary(i.publicId))).catch(
+      (err) => console.error("[Cloudinary] Failed to delete removed product images:", err),
+    );
+  }
 
   return serialize(updated);
 };
@@ -303,7 +335,7 @@ const deleteProduct = async (
 ) => {
   const existing = await prisma.product.findUnique({
     where: { id },
-    select: { id: true, businessId: true, status: true },
+    select: { id: true, businessId: true, status: true, images: true },
   });
 
   if (!existing) throw new AppError(httpStatus.NOT_FOUND, "Product not found.");
@@ -320,6 +352,14 @@ const deleteProduct = async (
     where: { id },
     data: { status: "DELETED" },
   });
+
+  // Fire-and-forget: remove all product images from Cloudinary
+  const images = (existing.images as unknown as IProductImage[]) ?? [];
+  if (images.length > 0) {
+    Promise.all(images.map((i) => deleteFromCloudinary(i.publicId))).catch(
+      (err) => console.error("[Cloudinary] Failed to delete product images on delete:", err),
+    );
+  }
 
   return null;
 };

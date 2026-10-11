@@ -54,3 +54,13 @@ export const uploadBusinessImages = multer({
     { name: "logo", maxCount: 1 },
     { name: "cover", maxCount: 1 },
 ]);
+
+/**
+ * Handles product image uploads — up to 10 images.
+ * Field name: "images"
+ */
+export const uploadProductImages = multer({
+    storage,
+    fileFilter: imageFilter,
+    limits: { fileSize: MAX_FILE_SIZE },
+}).array("images", 10);
