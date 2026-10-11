@@ -5,9 +5,9 @@ import validateRequest from "../../../middlewares/validateRequest";
 import { ProductController } from "./product.controller";
 import { ProductValidation } from "./product.validation";
 
-const router = Router();
+const router = Router({ mergeParams: true }); // mergeParams lets /:businessId flow in from parent
 
-// Public
+// Public — flat list
 router.get("/", ProductController.listProducts);
 router.get("/slug/:slug", ProductController.getProductBySlug);
 router.get("/:id", ProductController.getProductById);
@@ -16,7 +16,7 @@ router.get("/:id", ProductController.getProductById);
 router.post(
   "/",
   auth("SELLER"),
-  uploadProductImages, // parses multipart, populates req.files
+  uploadProductImages,
   validateRequest(ProductValidation.createProductSchema),
   ProductController.createProduct,
 );
@@ -24,7 +24,7 @@ router.post(
 router.patch(
   "/:id",
   auth("SELLER"),
-  uploadProductImages, // new images appended; retainImagePublicIds controls what's kept
+  uploadProductImages,
   validateRequest(ProductValidation.updateProductSchema),
   ProductController.updateProduct,
 );

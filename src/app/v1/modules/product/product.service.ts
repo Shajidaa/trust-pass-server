@@ -78,8 +78,10 @@ const listProducts = async (filters: IProductFilters) => {
   const skip = (page - 1) * limit;
 
   const where: any = {
-    // Public listing only exposes ACTIVE products unless status explicitly requested
-    status: filters.status ?? "ACTIVE",
+    // Exclude soft-deleted products. Callers can narrow by ?status=ACTIVE etc.
+    status: filters.status
+      ? filters.status
+      : { not: "DELETED" },
   };
 
   if (filters.search) {
@@ -137,7 +139,10 @@ const listBusinessProducts = async (
 
   const where: any = {
     businessId,
-    status: filters.status ?? "ACTIVE",
+    // Exclude soft-deleted products. Callers can narrow by ?status=ACTIVE etc.
+    status: filters.status
+      ? filters.status
+      : { not: "DELETED" },
   };
 
   if (filters.search) {
@@ -231,7 +236,7 @@ const createProduct = async (
       currency: payload.currency ?? "BDT",
       stock: payload.stock,
       images: uploadedImages as any,  // IProductImage[] — cast required for Prisma Json field
-      status: payload.status ?? "DRAFT",
+      status: payload.status ?? "ACTIVE",
     },
     select: PRODUCT_SELECT,
   });

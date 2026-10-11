@@ -14,12 +14,19 @@ import { BusinessVerifyRouter, VerificationRoutes } from "../modules/verificatio
 
 const v1Routes: Router = Router();
 
-interface IRoutes {
-  path: string;
-  router: Router;
-}
+// ── Nested: GET /api/v1/businesses/:id/products ──────────────────────────────
+// Must be registered BEFORE BusinessRoutes to prevent /:id catch-all from
+// consuming the request first.
+v1Routes.get("/businesses/:id/products", ProductController.listBusinessProducts);
 
-const routes: IRoutes[] = [
+// ── Nested: /api/v1/businesses/:id/documents ─────────────────────────────────
+v1Routes.use("/businesses/:id/documents", BusinessDocumentRoutes);
+
+// ── POST /api/v1/businesses/:id/verify ───────────────────────────────────────
+v1Routes.use("/businesses/:id/verify", BusinessVerifyRouter);
+
+// ── Module routes ─────────────────────────────────────────────────────────────
+const routes = [
   { path: "/users", router: UserRoutes },
   { path: "/profile", router: ProfileRoutes },
   { path: "/auth", router: AuthRoutes },
@@ -30,32 +37,21 @@ const routes: IRoutes[] = [
   { path: "/trust-rules", router: TrustRulesRoutes },
 ];
 
-routes.forEach((route) => {
-  v1Routes.use(route.path, route.router);
-});
+routes.forEach(({ path, router }) => v1Routes.use(path, router));
 
-// Nested: GET /api/v1/businesses/:id/products
-v1Routes.get("/businesses/:id/products", ProductController.listBusinessProducts);
-
-// Nested: /api/v1/businesses/:id/documents
-v1Routes.use("/businesses/:id/documents", BusinessDocumentRoutes);
-
-// Flat: /api/v1/documents/:id
+// ── Flat: /api/v1/documents/:id ───────────────────────────────────────────────
 v1Routes.use("/documents", DocumentRoutes);
 
-// POST /api/v1/businesses/:id/verify
-v1Routes.use("/businesses/:id/verify", BusinessVerifyRouter);
-
-// /api/v1/verifications
+// ── /api/v1/verifications ─────────────────────────────────────────────────────
 v1Routes.use("/verifications", VerificationRoutes);
 
-// /api/v1/reports
+// ── /api/v1/reports ───────────────────────────────────────────────────────────
 v1Routes.use("/reports", ReportRoutes);
 
-// /api/v1/notifications
+// ── /api/v1/notifications ─────────────────────────────────────────────────────
 v1Routes.use("/notifications", NotificationRoutes);
 
-// /api/v1/admin
+// ── /api/v1/admin ─────────────────────────────────────────────────────────────
 v1Routes.use("/admin", AdminRoutes);
 
 export default v1Routes;

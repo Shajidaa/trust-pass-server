@@ -21,7 +21,7 @@ const createProductSchema = z.object({
     currency: z.enum(CURRENCIES).optional().default("BDT"),
     stock: coerceOptionalNumber.pipe(z.number().int().min(0).optional()),
 
-    status: z.enum(STATUSES).optional().default("DRAFT"),
+    status: z.enum(STATUSES).optional().default("ACTIVE"),
 });
 
 const updateProductSchema = z.object({
