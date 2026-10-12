@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { AuthRoutes } from "../modules/auth/auth.route";
+
 import { BusinessRoutes } from "../modules/business/business.route";
 import { CategoryRoutes } from "../modules/category/category.route";
 import { BusinessDocumentRoutes, DocumentRoutes } from "../modules/document/document.route";

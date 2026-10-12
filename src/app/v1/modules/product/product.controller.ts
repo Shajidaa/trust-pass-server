@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse";
 import { ProductService } from "./product.service";
+import AppError from "../../../errors/AppError";
 
 const listProducts = catchAsync(async (req: Request, res: Response) => {
     const { page, limit, search, categoryId, currency, status, minPrice, maxPrice } = req.query;
