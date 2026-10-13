@@ -30,6 +30,13 @@ export default {
   bkash_password: process.env.BKASH_PASSWORD!,
   bkash_app_key: process.env.BKASH_APP_KEY!,
   bkash_app_secret: process.env.BKASH_APP_SECRET!,
-  bkash_callback_url: process.env.BKASH_CALLBACK_URL!,
-  frontend_url: process.env.FRONTEND_URL!,
+  bkash_callback_url:
+    process.env.BKASH_CALLBACK_URL ||
+    "http://localhost:5000/api/v1/payments/bkash/callback",
+  frontend_url:
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    "http://localhost:3000",
+  free_product_limit: Number(process.env.FREE_PRODUCT_LIMIT) || 5,
+  product_listing_fee: Number(process.env.PRODUCT_LISTING_FEE) || 100,
 };

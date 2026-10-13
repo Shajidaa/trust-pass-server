@@ -130,3 +130,15 @@ enum NotificationType {
   PRODUCT
   PROMOTION
 }
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+}
+
+enum PaymentPurpose {
+  PRODUCT_SLOT
+}
+

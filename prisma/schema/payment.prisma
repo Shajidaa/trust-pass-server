@@ -1,0 +1,25 @@
+model Payment {
+  id                    String         @id @default(uuid())
+  businessId            String
+  userId                String
+  purpose               PaymentPurpose @default(PRODUCT_SLOT)
+  amount                Decimal        @db.Decimal(10, 2)
+  currency              String         @default("BDT")
+  status                PaymentStatus  @default(PENDING)
+  bkashPaymentId        String?        @unique
+  bkashTrxId            String?
+  bkashExecuteTime      DateTime?
+  merchantInvoiceNumber String         @unique
+  bkashRawResponse      Json?
+  ipnPayload            Json?
+  slotsUnlocked         Int            @default(0)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  business              Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([businessId])
+  @@index([status])
+  @@map("payments")
+}

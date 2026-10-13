@@ -1,4 +1,5 @@
 import httpStatus from "http-status";
+import config from "../../../config";
 import AppError from "../../../errors/AppError";
 import { deleteFromCloudinary, uploadToCloudinary } from "../../../libs/cloudinary";
 import { prisma } from "../../../libs/prisma";
@@ -207,6 +208,7 @@ const getProductBySlug = async (slug: string) => {
 
 // ---------------------------------------------------------------------------
 // Create  (SELLER — must own the business)
+// Rule: First 5 products free. Subsequent products require bKash payment.
 // ---------------------------------------------------------------------------
 
 const createProduct = async (
@@ -216,32 +218,91 @@ const createProduct = async (
 ) => {
   await assertBusinessOwnership(payload.businessId, ownerId);
 
+  const freeLimit = config.free_product_limit || 5;
+
+  // 1. Check current non-deleted products and paid slots
+  const [currentProductCount, paidSlotsResult] = await Promise.all([
+    prisma.product.count({
+      where: {
+        businessId: payload.businessId,
+        status: { not: "DELETED" },
+      },
+    }),
+    prisma.payment.aggregate({
+      where: {
+        businessId: payload.businessId,
+        status: "SUCCESS",
+        purpose: "PRODUCT_SLOT",
+      },
+      _sum: {
+        slotsUnlocked: true,
+      },
+    }),
+  ]);
+
+  const paidSlotsTotal = paidSlotsResult._sum.slotsUnlocked || 0;
+  const totalAllowed = freeLimit + paidSlotsTotal;
+
+  if (currentProductCount >= totalAllowed) {
+    throw new AppError(
+      httpStatus.PAYMENT_REQUIRED,
+      `You have reached the free limit of ${freeLimit} products (current: ${currentProductCount}). You must pay via bKash to add more products.`,
+    );
+  }
+
   const slug = await resolveUniqueSlug(toSlug(payload.name));
 
-  // Upload all images to Cloudinary in parallel
+  // 2. Upload images to Cloudinary only after business rule check passes
   const uploadedImages: IProductImage[] = await Promise.all(
     imageFiles.map((file) =>
       uploadToCloudinary(file.buffer, `products/${payload.businessId}`),
     ),
   );
 
-  const product = await prisma.product.create({
-    data: {
-      businessId: payload.businessId,
-      categoryId: payload.categoryId,
-      name: payload.name.trim(),
-      slug,
-      description: payload.description,
-      price: payload.price,
-      currency: payload.currency ?? "BDT",
-      stock: payload.stock,
-      images: uploadedImages as any,  // IProductImage[] — cast required for Prisma Json field
-      status: payload.status ?? "ACTIVE",
-    },
-    select: PRODUCT_SELECT,
-  });
+  try {
+    // 3. Atomically verify limit and create product inside transaction
+    const product = await prisma.$transaction(async (tx) => {
+      const activeCount = await tx.product.count({
+        where: {
+          businessId: payload.businessId,
+          status: { not: "DELETED" },
+        },
+      });
 
-  return serialize(product);
+      if (activeCount >= totalAllowed) {
+        throw new AppError(
+          httpStatus.PAYMENT_REQUIRED,
+          `Listing quota exceeded. Please pay via bKash to add more products.`,
+        );
+      }
+
+      return tx.product.create({
+        data: {
+          businessId: payload.businessId,
+          categoryId: payload.categoryId,
+          name: payload.name.trim(),
+          slug,
+          description: payload.description,
+          price: payload.price,
+          currency: payload.currency ?? "BDT",
+          stock: payload.stock,
+          images: uploadedImages as any, // IProductImage[] — cast required for Prisma Json field
+          status: payload.status ?? "ACTIVE",
+        },
+        select: PRODUCT_SELECT,
+      });
+    });
+
+    return serialize(product);
+  } catch (error) {
+    // Clean up uploaded Cloudinary images if transaction or create fails
+    if (uploadedImages.length > 0) {
+      Promise.all(uploadedImages.map((img) => deleteFromCloudinary(img.publicId))).catch(
+        (err) => console.error("[Cloudinary] Failed to clean up images on product create failure:", err),
+      );
+    }
+    throw error;
+  }
 };
 
 // ---------------------------------------------------------------------------

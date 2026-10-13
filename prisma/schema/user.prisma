@@ -15,6 +15,7 @@ model User {
   accounts      Account[]
   businesses    Business[]
   notifications Notification[]
+  payments      Payment[]
   profile       Profile[]
   reports       Report[]
   sessions      Session[]

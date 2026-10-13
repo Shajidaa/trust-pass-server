@@ -6,6 +6,7 @@ import { CategoryRoutes } from "../modules/category/category.route";
 import { BusinessDocumentRoutes, DocumentRoutes } from "../modules/document/document.route";
 import { ProductController } from "../modules/product/product.controller";
 import { ProductRoutes } from "../modules/product/product.route";
+import { PaymentRoutes } from "../modules/payment/payment.route";
 import { TrustRulesRoutes, TrustScoreRoutes } from "../modules/trust/trust.route";
 import { UserRoutes, ProfileRoutes } from "../modules/user/user.route";
 import { AdminRoutes } from "../modules/admin/admin.route";
@@ -34,6 +35,7 @@ const routes = [
   { path: "/categories", router: CategoryRoutes },
   { path: "/businesses", router: BusinessRoutes },
   { path: "/products", router: ProductRoutes },
+  { path: "/payments", router: PaymentRoutes },
   { path: "/trust-scores", router: TrustScoreRoutes },
   { path: "/trust-rules", router: TrustRulesRoutes },
 ];

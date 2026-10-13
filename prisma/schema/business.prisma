@@ -38,6 +38,7 @@ model Business {
   businessVerifications BusinessVerification[]
   address               Address?               @relation(fields: [addressId], references: [id])
   owner                 User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  payments              Payment[]
   products              Product[]
   reports               Report[]
   trustScores           TrustScore?
