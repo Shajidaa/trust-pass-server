@@ -38,5 +38,5 @@ export default {
     process.env.CLIENT_URL ||
     "http://localhost:3000",
   free_product_limit: Number(process.env.FREE_PRODUCT_LIMIT) || 5,
-  product_listing_fee: Number(process.env.PRODUCT_LISTING_FEE) || 100,
+  product_listing_fee: Number(process.env.PRODUCT_LISTING_FEE) || 500,
 };
