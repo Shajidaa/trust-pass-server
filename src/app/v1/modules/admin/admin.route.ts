@@ -8,5 +8,9 @@ router.get("/dashboard", auth("ADMIN"), AdminController.getDashboardStats);
 router.get("/businesses", auth("ADMIN"), AdminController.getAdminBusinesses);
 router.get("/reports", auth("ADMIN"), AdminController.getAdminReports);
 router.get("/users", auth("ADMIN", "MODERATOR"), AdminController.getAdminUsers);
-
+router.get(
+  "/payments",
+  auth("ADMIN"),
+  AdminController.getAdminBusinessPayments,
+);
 export const AdminRoutes = router;

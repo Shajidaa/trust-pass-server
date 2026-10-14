@@ -223,6 +223,37 @@ const getAdminUsers = async (
   };
 };
 
+const getAdminBusinessPayments = async (
+  page = 1,
+  limit = 20,
+  search?: string,
+  status?: string,
+) => {
+  const skip = (Math.max(1, page) - 1) * Math.min(100, limit);
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { transactionId: { contains: search, mode: "insensitive" } },
+      { business: { name: { contains: search, mode: "insensitive" } } },
+    ];
+  }
+  if (status) where.status = status;
+  const [payments, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.payment.count({ where }),
+  ]);
+
+  return {
+    meta: { page, limit, total, totalPage: Math.ceil(total / limit) },
+    data: payments,
+  };
+};
+
 // ---------------------------------------------------------------------------
 
 export const AdminService = {
@@ -230,4 +261,5 @@ export const AdminService = {
   getAdminBusinesses,
   getAdminReports,
   getAdminUsers,
+  getAdminBusinessPayments,
 };
