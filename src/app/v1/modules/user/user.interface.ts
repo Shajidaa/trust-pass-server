@@ -11,3 +11,8 @@ export interface IUpdateProfilePayload {
 export interface IUpdateRolePayload {
   role: "CUSTOMER" | "SELLER" | "MODERATOR" | "ADMIN";
 }
+
+export interface IUpdateStatusPayload {
+  status: "ACTIVE" | "BLOCKED";
+  reason?: string;
+}

@@ -5,6 +5,7 @@ import { prisma } from "../../../libs/prisma";
 import {
   IUpdateProfilePayload,
   IUpdateRolePayload,
+  IUpdateStatusPayload,
   IUpdateUserPayload,
 } from "./user.interface";
 
@@ -265,6 +266,60 @@ const deleteUser = async (id: string, requesterId: string) => {
 };
 
 // ---------------------------------------------------------------------------
+// ADMIN — Ban / Unban user
+// ---------------------------------------------------------------------------
+
+const updateUserStatus = async (
+  targetId: string,
+  requesterId: string,
+  payload: IUpdateStatusPayload,
+) => {
+  // Guard: admin cannot act on their own account via this endpoint
+  if (targetId === requesterId) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You cannot change your own account status.",
+    );
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, role: true, status: true, email: true, name: true },
+  });
+
+  if (!target) throw new AppError(httpStatus.NOT_FOUND, "User not found.");
+
+  // Guard: protect ADMIN accounts from being banned by other admins
+  if (target.role === "ADMIN") {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "Admin accounts cannot be banned.",
+    );
+  }
+
+  // Guard: no-op prevention — avoid redundant updates
+  if (target.status === payload.status) {
+    const label = payload.status === "BLOCKED" ? "already banned" : "already active";
+    throw new AppError(httpStatus.CONFLICT, `User is ${label}.`);
+  }
+
+  // Persist the status change
+  const updated = await prisma.user.update({
+    where: { id: targetId },
+    data: { status: payload.status },
+    select: SAFE_USER,
+  });
+
+  // On ban: revoke all active sessions immediately so the user is
+  // logged out across all devices without waiting for token expiry.
+  if (payload.status === "BLOCKED") {
+    await prisma.session.deleteMany({ where: { userId: targetId } });
+  }
+
+  return updated;
+};
+
+// ---------------------------------------------------------------------------
 
 export const UserService = {
   getMe,
@@ -275,5 +330,6 @@ export const UserService = {
   listUsers,
   getUserById,
   updateUserRole,
+  updateUserStatus,
   deleteUser,
 };

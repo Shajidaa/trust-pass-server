@@ -29,6 +29,12 @@ userRouter.patch(
   validateRequest(UserValidation.updateRoleSchema),
   UserController.updateUserRole,
 );
+userRouter.patch(
+  "/:id/status",
+  auth("ADMIN"),
+  validateRequest(UserValidation.updateStatusSchema),
+  UserController.updateUserStatus,
+);
 userRouter.delete("/:id", auth("ADMIN"), UserController.deleteUser);
 
 // ---------------------------------------------------------------------------

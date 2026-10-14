@@ -124,6 +124,21 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateUserStatus = catchAsync(async (req: Request, res: Response) => {
+  const result = await UserService.updateUserStatus(
+    String(req.params.id),
+    req.user!.id,
+    req.body,
+  );
+  const isBanned = result.status === "BLOCKED";
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: isBanned ? "User has been banned." : "User has been unbanned.",
+    data: result,
+  });
+});
+
 export const UserController = {
   getMe,
   updateMe,
@@ -133,5 +148,6 @@ export const UserController = {
   listUsers,
   getUserById,
   updateUserRole,
+  updateUserStatus,
   deleteUser,
 };

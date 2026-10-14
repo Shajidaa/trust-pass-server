@@ -20,8 +20,14 @@ const updateRoleSchema = z.object({
   role: z.enum(["CUSTOMER", "SELLER", "MODERATOR", "ADMIN"]),
 });
 
+const updateStatusSchema = z.object({
+  status: z.enum(["ACTIVE", "BLOCKED"]),
+  reason: z.string().min(3).max(500).optional(),
+});
+
 export const UserValidation = {
   updateUserSchema,
   updateProfileSchema,
   updateRoleSchema,
+  updateStatusSchema,
 };
