@@ -244,6 +244,19 @@ const getAdminBusinessPayments = async (
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        bkashTrxId: true,
+        amount: true,
+        currency: true,
+        status: true,
+
+
+        createdAt: true,
+        updatedAt: true,
+        business: { select: { id: true, name: true, slug: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
     }),
     prisma.payment.count({ where }),
   ]);
