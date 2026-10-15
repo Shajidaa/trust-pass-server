@@ -14,7 +14,12 @@ import {
 const assertBusinessOwner = async (businessId: string, userId: string) => {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { id: true, ownerId: true, verificationStatus: true },
+    select: {
+      id: true,
+      ownerId: true,
+      owner: { select: { id: true, name: true, email: true } },
+      verificationStatus: true,
+    },
   });
   if (!business)
     throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
@@ -91,6 +96,7 @@ const listBusinessVerifications = async (status?: string) => {
           slug: true,
           verificationStatus: true,
           ownerId: true,
+          owner: { select: { id: true, name: true, email: true } },
           documents: {
             where: { status: "APPROVED" },
             select: {
@@ -121,6 +127,7 @@ const getVerificationById = async (id: string) => {
           slug: true,
           verificationStatus: true,
           ownerId: true,
+          owner: { select: { id: true, name: true, email: true } },
           documents: {
             orderBy: { createdAt: "desc" as const },
             select: {
@@ -207,6 +214,7 @@ const listReports = async (status?: string) => {
         select: { id: true, name: true, slug: true, verificationStatus: true },
       },
       reporter: { select: { id: true, name: true, email: true } },
+      owner: { select: { id: true, name: true, email: true } },
     },
   });
 };
@@ -276,7 +284,12 @@ const reviewReport = async (
 const getBusinessTrustScores = async (businessId: string) => {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { id: true, trustScore: true, trustScoreUpdatedAt: true },
+    select: {
+      business: { select: { id: true, name: true, email: true } },
+      id: true,
+      trustScore: true,
+      trustScoreUpdatedAt: true,
+    },
   });
   if (!business)
     throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
@@ -311,22 +324,37 @@ const addBusinessTrustScore = async (
     }),
     prisma.trustScoreRule.findUnique({
       where: { ruleKey: payload.ruleKey },
-      select: { id: true, isActive: true, points: true, ruleKey: true, label: true },
+      select: {
+        id: true,
+        isActive: true,
+        points: true,
+        ruleKey: true,
+        label: true,
+      },
     }),
   ]);
 
   if (!business)
     throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
   if (!rule)
-    throw new AppError(httpStatus.NOT_FOUND, `Trust rule "${payload.ruleKey}" not found.`);
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      `Trust rule "${payload.ruleKey}" not found.`,
+    );
   if (!rule.isActive)
-    throw new AppError(httpStatus.BAD_REQUEST, "Cannot apply an inactive rule.");
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot apply an inactive rule.",
+    );
 
   const alreadyScored = await prisma.businessTrustScore.findFirst({
     where: { businessId, ruleId: rule.id },
   });
   if (alreadyScored)
-    throw new AppError(httpStatus.CONFLICT, `Trust score for rule "${payload.ruleKey}" already awarded.`);
+    throw new AppError(
+      httpStatus.CONFLICT,
+      `Trust score for rule "${payload.ruleKey}" already awarded.`,
+    );
 
   const pointsAwarded = Number(rule.points);
 
