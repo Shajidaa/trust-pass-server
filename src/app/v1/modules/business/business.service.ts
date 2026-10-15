@@ -12,6 +12,7 @@ import {
   ICreateBusinessPayload,
   IUpdateBusinessPayload,
 } from "./business.interface";
+import { report } from "node:process";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,6 +47,24 @@ const BUSINESS_SELECT = {
   createdAt: true,
   updatedAt: true,
   address: true,
+  reports: {
+    select: {
+      id: true,
+      reason: true,
+      description: true,
+      status: true,
+      evidenceUrls: true,
+
+      reporter: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      createdAt: true,
+    },
+  },
 } as const;
 
 const resolveUniqueSlug = async (
@@ -113,7 +132,8 @@ const getBusinessById = async (id: string) => {
     where: { id },
     select: BUSINESS_SELECT,
   });
-  if (!business) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!business)
+    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
   return business;
 };
 
@@ -126,7 +146,8 @@ const getBusinessBySlug = async (slug: string) => {
     where: { slug },
     select: BUSINESS_SELECT,
   });
-  if (!business) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!business)
+    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
   return business;
 };
 
@@ -161,24 +182,24 @@ const createBusiness = async (
   const [logoResult, coverResult] = await Promise.all([
     files?.logo
       ? uploadToCloudinary(
-        files.logo.buffer,
-        `trust-pass/businesses/${ownerId}/logo`,
-        `logo_${slug}`,
-      ).then((r) => {
-        uploadedPublicIds.push(r.publicId);
-        return r;
-      })
+          files.logo.buffer,
+          `trust-pass/businesses/${ownerId}/logo`,
+          `logo_${slug}`,
+        ).then((r) => {
+          uploadedPublicIds.push(r.publicId);
+          return r;
+        })
       : Promise.resolve(null),
 
     files?.cover
       ? uploadToCloudinary(
-        files.cover.buffer,
-        `trust-pass/businesses/${ownerId}/cover`,
-        `cover_${slug}`,
-      ).then((r) => {
-        uploadedPublicIds.push(r.publicId);
-        return r;
-      })
+          files.cover.buffer,
+          `trust-pass/businesses/${ownerId}/cover`,
+          `cover_${slug}`,
+        ).then((r) => {
+          uploadedPublicIds.push(r.publicId);
+          return r;
+        })
       : Promise.resolve(null),
   ]);
 
@@ -266,7 +287,8 @@ const updateBusiness = async (
     },
   });
 
-  if (!existing) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!existing)
+    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
 
   if (existing.ownerId !== ownerId) {
     throw new AppError(
@@ -276,7 +298,10 @@ const updateBusiness = async (
   }
 
   let slug = existing.slug;
-  if (payload.name && payload.name.toLowerCase() !== existing.name.toLowerCase()) {
+  if (
+    payload.name &&
+    payload.name.toLowerCase() !== existing.name.toLowerCase()
+  ) {
     slug = await resolveUniqueSlug(toSlug(payload.name), id);
   }
 
@@ -287,24 +312,24 @@ const updateBusiness = async (
   const [logoResult, coverResult] = await Promise.all([
     files?.logo
       ? uploadToCloudinary(
-        files.logo.buffer,
-        `trust-pass/businesses/${ownerId}/logo`,
-        `logo_${slug}`,
-      ).then((r) => {
-        uploadedPublicIds.push(r.publicId);
-        return r;
-      })
+          files.logo.buffer,
+          `trust-pass/businesses/${ownerId}/logo`,
+          `logo_${slug}`,
+        ).then((r) => {
+          uploadedPublicIds.push(r.publicId);
+          return r;
+        })
       : Promise.resolve(null),
 
     files?.cover
       ? uploadToCloudinary(
-        files.cover.buffer,
-        `trust-pass/businesses/${ownerId}/cover`,
-        `cover_${slug}`,
-      ).then((r) => {
-        uploadedPublicIds.push(r.publicId);
-        return r;
-      })
+          files.cover.buffer,
+          `trust-pass/businesses/${ownerId}/cover`,
+          `cover_${slug}`,
+        ).then((r) => {
+          uploadedPublicIds.push(r.publicId);
+          return r;
+        })
       : Promise.resolve(null),
   ]);
 
@@ -313,24 +338,42 @@ const updateBusiness = async (
   const coverUrl = coverResult?.url ?? payload.coverUrl;
 
   // Track old Cloudinary assets to delete after successful update
-  if (logoResult && existing.logoUrl) oldPublicIds.push(extractPublicId(existing.logoUrl));
-  if (coverResult && existing.coverUrl) oldPublicIds.push(extractPublicId(existing.coverUrl));
+  if (logoResult && existing.logoUrl)
+    oldPublicIds.push(extractPublicId(existing.logoUrl));
+  if (coverResult && existing.coverUrl)
+    oldPublicIds.push(extractPublicId(existing.coverUrl));
 
   try {
     const updated = await prisma.business.update({
       where: { id },
       data: {
         ...(payload.name ? { name: payload.name.trim(), slug } : {}),
-        ...(payload.description !== undefined ? { description: payload.description } : {}),
+        ...(payload.description !== undefined
+          ? { description: payload.description }
+          : {}),
         ...(logoUrl !== undefined ? { logoUrl } : {}),
         ...(coverUrl !== undefined ? { coverUrl } : {}),
-        ...(payload.categoryId !== undefined ? { categoryId: payload.categoryId } : {}),
-        ...(payload.businessType !== undefined ? { businessType: payload.businessType } : {}),
-        ...(payload.websiteUrl !== undefined ? { websiteUrl: payload.websiteUrl } : {}),
-        ...(payload.instaUrl !== undefined ? { instaUrl: payload.instaUrl } : {}),
-        ...(payload.tiktokUrl !== undefined ? { tiktokUrl: payload.tiktokUrl } : {}),
-        ...(payload.contactEmail !== undefined ? { contactEmail: payload.contactEmail } : {}),
-        ...(payload.contactPhone !== undefined ? { contactPhone: payload.contactPhone } : {}),
+        ...(payload.categoryId !== undefined
+          ? { categoryId: payload.categoryId }
+          : {}),
+        ...(payload.businessType !== undefined
+          ? { businessType: payload.businessType }
+          : {}),
+        ...(payload.websiteUrl !== undefined
+          ? { websiteUrl: payload.websiteUrl }
+          : {}),
+        ...(payload.instaUrl !== undefined
+          ? { instaUrl: payload.instaUrl }
+          : {}),
+        ...(payload.tiktokUrl !== undefined
+          ? { tiktokUrl: payload.tiktokUrl }
+          : {}),
+        ...(payload.contactEmail !== undefined
+          ? { contactEmail: payload.contactEmail }
+          : {}),
+        ...(payload.contactPhone !== undefined
+          ? { contactPhone: payload.contactPhone }
+          : {}),
       },
       select: BUSINESS_SELECT,
     });
@@ -359,10 +402,17 @@ const deleteBusiness = async (
 ) => {
   const existing = await prisma.business.findUnique({
     where: { id },
-    select: { id: true, ownerId: true, logoUrl: true, coverUrl: true, addressId: true },
+    select: {
+      id: true,
+      ownerId: true,
+      logoUrl: true,
+      coverUrl: true,
+      addressId: true,
+    },
   });
 
-  if (!existing) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!existing)
+    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
 
   const isOwner = existing.ownerId === requesterId;
   const isAdmin = requesterRole === "ADMIN";
@@ -377,13 +427,19 @@ const deleteBusiness = async (
   await prisma.business.delete({ where: { id } });
 
   if (existing.addressId) {
-    await prisma.address.delete({ where: { id: existing.addressId } }).catch(() => { });
+    await prisma.address
+      .delete({ where: { id: existing.addressId } })
+      .catch(() => {});
   }
 
   // Clean up Cloudinary assets after DB delete succeeds
-  const toDelete = [existing.logoUrl, existing.coverUrl].filter(Boolean) as string[];
+  const toDelete = [existing.logoUrl, existing.coverUrl].filter(
+    Boolean,
+  ) as string[];
   if (toDelete.length > 0) {
-    await Promise.allSettled(toDelete.map((url) => deleteFromCloudinary(extractPublicId(url))));
+    await Promise.allSettled(
+      toDelete.map((url) => deleteFromCloudinary(extractPublicId(url))),
+    );
   }
 
   return null;
@@ -403,7 +459,8 @@ const updateBusinessAddress = async (
     select: { id: true, ownerId: true, addressId: true },
   });
 
-  if (!existing) throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
+  if (!existing)
+    throw new AppError(httpStatus.NOT_FOUND, "Business not found.");
 
   if (existing.ownerId !== ownerId) {
     throw new AppError(
@@ -429,7 +486,10 @@ const updateBusinessAddress = async (
   }
 
   const address = await prisma.address.create({ data: addressData });
-  await prisma.business.update({ where: { id }, data: { addressId: address.id } });
+  await prisma.business.update({
+    where: { id },
+    data: { addressId: address.id },
+  });
   return address;
 };
 
