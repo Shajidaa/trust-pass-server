@@ -1,7 +1,10 @@
 import httpStatus from "http-status";
 import config from "../../../config";
 import AppError from "../../../errors/AppError";
-import { deleteFromCloudinary, uploadToCloudinary } from "../../../libs/cloudinary";
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from "../../../libs/cloudinary";
 import { prisma } from "../../../libs/prisma";
 import {
   ICreateProductPayload,
@@ -9,6 +12,7 @@ import {
   IProductImage,
   IUpdateProductPayload,
 } from "./product.interface";
+import { email } from "zod";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,6 +31,15 @@ const PRODUCT_SELECT = {
   id: true,
   businessId: true,
   categoryId: true,
+  business: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      logo: true,
+      owner: { select: { id: true, name: true, email: true } },
+    },
+  },
   name: true,
   slug: true,
   description: true,
@@ -80,9 +93,7 @@ const listProducts = async (filters: IProductFilters) => {
 
   const where: any = {
     // Exclude soft-deleted products. Callers can narrow by ?status=ACTIVE etc.
-    status: filters.status
-      ? filters.status
-      : { not: "DELETED" },
+    status: filters.status ? filters.status : { not: "DELETED" },
   };
 
   if (filters.search) {
@@ -141,9 +152,7 @@ const listBusinessProducts = async (
   const where: any = {
     businessId,
     // Exclude soft-deleted products. Callers can narrow by ?status=ACTIVE etc.
-    status: filters.status
-      ? filters.status
-      : { not: "DELETED" },
+    status: filters.status ? filters.status : { not: "DELETED" },
   };
 
   if (filters.search) {
@@ -297,8 +306,13 @@ const createProduct = async (
   } catch (error) {
     // Clean up uploaded Cloudinary images if transaction or create fails
     if (uploadedImages.length > 0) {
-      Promise.all(uploadedImages.map((img) => deleteFromCloudinary(img.publicId))).catch(
-        (err) => console.error("[Cloudinary] Failed to clean up images on product create failure:", err),
+      Promise.all(
+        uploadedImages.map((img) => deleteFromCloudinary(img.publicId)),
+      ).catch((err) =>
+        console.error(
+          "[Cloudinary] Failed to clean up images on product create failure:",
+          err,
+        ),
       );
     }
     throw error;
@@ -341,10 +355,14 @@ const updateProduct = async (
 
   // Resolve which existing images to keep
   const currentImages = (existing.images as unknown as IProductImage[]) ?? [];
-  const retainSet = new Set(payload.retainImagePublicIds ?? currentImages.map((i) => i.publicId));
+  const retainSet = new Set(
+    payload.retainImagePublicIds ?? currentImages.map((i) => i.publicId),
+  );
 
   const imagesToKeep = currentImages.filter((i) => retainSet.has(i.publicId));
-  const imagesToDelete = currentImages.filter((i) => !retainSet.has(i.publicId));
+  const imagesToDelete = currentImages.filter(
+    (i) => !retainSet.has(i.publicId),
+  );
 
   // Upload new images (if any)
   const newlyUploaded: IProductImage[] = await Promise.all(
@@ -356,11 +374,17 @@ const updateProduct = async (
   const finalImages = [...imagesToKeep, ...newlyUploaded];
 
   if (finalImages.length > 10) {
-    throw new AppError(httpStatus.BAD_REQUEST, "A product can have at most 10 images.");
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "A product can have at most 10 images.",
+    );
   }
 
   let slug = existing.slug;
-  if (payload.name && payload.name.toLowerCase() !== existing.name.toLowerCase()) {
+  if (
+    payload.name &&
+    payload.name.toLowerCase() !== existing.name.toLowerCase()
+  ) {
     slug = await resolveUniqueSlug(toSlug(payload.name), id);
   }
 
@@ -368,21 +392,30 @@ const updateProduct = async (
     where: { id },
     data: {
       ...(payload.name ? { name: payload.name.trim(), slug } : {}),
-      ...(payload.description !== undefined ? { description: payload.description } : {}),
-      ...(payload.categoryId !== undefined ? { categoryId: payload.categoryId } : {}),
+      ...(payload.description !== undefined
+        ? { description: payload.description }
+        : {}),
+      ...(payload.categoryId !== undefined
+        ? { categoryId: payload.categoryId }
+        : {}),
       ...(payload.price !== undefined ? { price: payload.price } : {}),
       ...(payload.currency !== undefined ? { currency: payload.currency } : {}),
       ...(payload.stock !== undefined ? { stock: payload.stock } : {}),
       ...(payload.status !== undefined ? { status: payload.status } : {}),
-      images: finalImages as any,  // IProductImage[] — cast required for Prisma Json field
+      images: finalImages as any, // IProductImage[] — cast required for Prisma Json field
     },
     select: PRODUCT_SELECT,
   });
 
   // Clean up removed images from Cloudinary after DB commit (non-blocking)
   if (imagesToDelete.length > 0) {
-    Promise.all(imagesToDelete.map((i) => deleteFromCloudinary(i.publicId))).catch(
-      (err) => console.error("[Cloudinary] Failed to delete removed product images:", err),
+    Promise.all(
+      imagesToDelete.map((i) => deleteFromCloudinary(i.publicId)),
+    ).catch((err) =>
+      console.error(
+        "[Cloudinary] Failed to delete removed product images:",
+        err,
+      ),
     );
   }
 
@@ -423,7 +456,11 @@ const deleteProduct = async (
   const images = (existing.images as unknown as IProductImage[]) ?? [];
   if (images.length > 0) {
     Promise.all(images.map((i) => deleteFromCloudinary(i.publicId))).catch(
-      (err) => console.error("[Cloudinary] Failed to delete product images on delete:", err),
+      (err) =>
+        console.error(
+          "[Cloudinary] Failed to delete product images on delete:",
+          err,
+        ),
     );
   }
 
