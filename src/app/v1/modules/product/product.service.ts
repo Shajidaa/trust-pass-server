@@ -35,8 +35,8 @@ const PRODUCT_SELECT = {
     select: {
       id: true,
       name: true,
-      email: true,
-      logo: true,
+
+      logoUrl: true,
       owner: { select: { id: true, name: true, email: true } },
     },
   },
