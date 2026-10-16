@@ -251,7 +251,10 @@ const handleBkashCallback = async (query: IBkashCallbackQuery) => {
     const idToken = await bkashGrantToken();
     const execRes = await bkashExecutePayment(idToken, paymentID);
 
-    if (execRes.statusCode === "0000" && execRes.transactionStatus === "Completed") {
+    // statusCode "0000" is the only authoritative success signal from bKash.
+    // transactionStatus can vary ("Completed", "Initiated", etc.) across sandbox
+    // and production — do not gate on it.
+    if (execRes.statusCode === "0000") {
       const updatedPayment = await prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -325,7 +328,7 @@ const executeBkashPaymentDirect = async (
   const idToken = await bkashGrantToken();
   const execRes = await bkashExecutePayment(idToken, paymentID);
 
-  if (execRes.statusCode === "0000" && execRes.transactionStatus === "Completed") {
+  if (execRes.statusCode === "0000") {
     const updated = await prisma.payment.update({
       where: { id: payment.id },
       data: {
